@@ -6,14 +6,25 @@ class Transaction:
     VALID_CURRENCIES = {"EUR", "USD", "GBP"}
     
     def __init__(self,ticker, transaction_date, transaction_type, quantity, cost_per_unit, fees, currency):
-
+        ticker = ticker.upper()
         currency = currency.upper()
+        transaction_type = transaction_type.upper()
 
         if currency not in self.VALID_CURRENCIES:
-            print('You are trying to use invalid currency please change the currency type')
-            raise ValueError()    
+            raise ValueError(f'You are trying to use invalid currency please change the currency type')
 
+        if transaction_type not in self.VALID_TYPES:
+            raise ValueError(f"Please indicate a {self.VALID_TYPES} type transaction")
 
+        if quantity <= 0:
+            raise ValueError("Please enter quantity positive")
+        
+        if fees < 0:
+            raise ValueError("Please enter fees positive")
+
+        if ticker.strip() == "":
+            raise ValueError("Please Enter Valid Ticker")
+        
         self.ticker = ticker
         self.transaction_date = transaction_date
         self.transaction_type = transaction_type
@@ -22,6 +33,15 @@ class Transaction:
         self.fees = fees
         self. currency = currency
 
-        
 
-transaction = Transaction('aapl', 2000, 'BUY', 3, 4, 0, 'EUR')
+        if self.transaction_type == "BUY":
+            self.total_cost = (self.cost_per_unit  * self.quantity) + self.fees
+        elif self.transaction_type == "SELL":
+            self.total_cost = - (self.cost_per_unit * self.quantity) - self.fees 
+
+
+
+
+if __name__ == "__main__":
+    transcation_test = Transaction('AAPL', 2000,'SELL', 3,5,1,'EUR')
+    print(transcation_test.total_cost)
