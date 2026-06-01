@@ -1,4 +1,4 @@
-from transaction import Transaction
+from domain.transaction import Transaction
 
 
 class Position():
@@ -41,10 +41,17 @@ class Position():
         for i in total_buys:
             cost_total += i.quantity * i.cost_per_unit
             total_quantity += i.quantity
-            
+
         if total_quantity != 0:
             average_cost = cost_total / total_quantity
         else:
             average_cost = 0
 
         return average_cost
+    
+    @property
+    def is_open(self):
+        return self.net_quantity > 0 
+
+            
+    
