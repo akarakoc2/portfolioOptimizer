@@ -1,4 +1,4 @@
-from domain.transaction import Transaction
+from transaction import Transaction
 
 
 class Position():
@@ -55,3 +55,12 @@ class Position():
 
             
     
+if __name__ == "__main__":
+    
+    transcation_test = Transaction('AAPL', 2000,'BUY', 3,5,1,'EUR')
+    transaction2 = Transaction('aapl', 4000,'BUY', 6,6,4,'EUR')
+    pos1 = Position(transcation_test)
+    pos1.add_transaction(transaction2)
+
+    print(pos1.ticker)
+

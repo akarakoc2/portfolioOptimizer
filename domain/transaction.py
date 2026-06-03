@@ -41,7 +41,3 @@ class Transaction:
 
 
 
-
-if __name__ == "__main__":
-    transcation_test = Transaction('AAPL', 2000,'SELL', 3,5,1,'EUR')
-    print(transcation_test.total_cost)
