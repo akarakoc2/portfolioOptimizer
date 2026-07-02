@@ -1,0 +1,44 @@
+ROBOTICS UNIVERSE SCREENER — 2026-06-10 20:51
+============================================================
+
+Total companies:         96
+Total market cap:        $150.49T
+Median market cap:       $27.59B
+
+TOP 20 BY MARKET CAP:
+============================================================
+  1. 000270.KS  Kia Corporation                     $62.07T
+  2. 6758.T     Sony Group Corporation              $19.93T
+  3. 6861.T     Keyence Corporation                 $17.68T
+  4. 6981.T     Murata Manufacturing Co., Ltd.      $15.75T
+  5. 6954.T     Fanuc Corporation                   $6.31T
+  6. NVDA       NVIDIA Corporation                  $4.88T
+  7. GOOGL      Alphabet Inc.                       $4.34T
+  8. MSFT       Microsoft Corporation               $2.97T
+  9. AMZN       Amazon.com, Inc.                    $2.56T
+ 10. 6383.T     Daifuku Co., Ltd.                   $2.34T
+ 11. AVGO       Broadcom Inc.                       $1.78T
+ 12. 6506.T     YASKAWA Electric Corporation        $1.55T
+ 13. META       Meta Platforms, Inc.                $1.45T
+ 14. TSLA       Tesla, Inc.                         $1.44T
+ 15. 6645.T     OMRON Corporation                   $1.08T
+ 16. INTC       Intel Corporation                   $537.08B
+ 17. 9888.HK    Baidu, Inc.                         $317.66B
+ 18. PLTR       Palantir Technologies Inc.          $313.83B
+ 19. IBM        International Business Machines Corporation $257.57B
+ 20. TXN        Texas Instruments Incorporated      $257.12B
+
+BY COUNTRY:
+============================================================
+Japan                $64.64T        (7 cos)
+South Korea          $62.07T        (1 cos)
+United States        $22.68T        (71 cos)
+China                $731.37B       (8 cos)
+Germany              $229.99B       (1 cos)
+Ireland              $103.12B       (1 cos)
+United Kingdom       $27.09B        (2 cos)
+Netherlands          $6.37B         (1 cos)
+Switzerland          $1.95B         (1 cos)
+Canada               $610.33M       (1 cos)
+Israel               $141.70M       (1 cos)
+Hong Kong            $2.53M         (1 cos)

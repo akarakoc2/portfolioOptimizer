@@ -1,0 +1,97 @@
+﻿Rank,Ticker,Name,Market Cap,Market Cap (fmt),Price,Currency,Exchange,Country,Sector,Industry,P/E Ratio,Revenue,Revenue (fmt),Employees,Type,Website
+1,000270.KS,Kia Corporation,62068367556608,$62.07T,159700.0,KRW,KSC,South Korea,Consumer Cyclical,Auto Manufacturers,,115625292726272.0,$115.63T,,EQUITY,https://www.kia.com
+2,6758.T,Sony Group Corporation,19934235066368,$19.93T,3385.0,JPY,JPX,Japan,Technology,Consumer Electronics,19.74,12479619923968.0,$12.48T,,EQUITY,https://www.sony.com
+3,6861.T,Keyence Corporation,17677657571328,$17.68T,72890.0,JPY,JPX,Japan,Technology,Scientific & Technical Instruments,39.63,1169288986624.0,$1.17T,,EQUITY,https://www.keyence.com
+4,6981.T,"Murata Manufacturing Co., Ltd.",15745514733568,$15.75T,8650.0,JPY,JPX,Japan,Technology,Electronic Components,67.62,1830856032256.0,$1.83T,74302.0,EQUITY,https://www.murata.com
+5,6954.T,Fanuc Corporation,6310950076416,$6.31T,6763.0,JPY,JPX,Japan,Industrials,Specialty Industrial Machinery,37.84,857830981632.0,$857.83B,,EQUITY,https://www.fanuc.co.jp
+6,NVDA,NVIDIA Corporation,4881379229696,$4.88T,201.52,USD,NMS,United States,Technology,Semiconductors,30.82,253491003392.0,$253.49B,42000.0,EQUITY,https://www.nvidia.com
+7,GOOGL,Alphabet Inc.,4338347933696,$4.34T,355.75,USD,NMS,United States,Communication Services,Internet Content & Information,27.14,422498009088.0,$422.50B,194668.0,EQUITY,https://abc.xyz
+8,MSFT,Microsoft Corporation,2973268180992,$2.97T,400.26,USD,NMS,United States,Technology,Software - Infrastructure,23.85,318272995328.0,$318.27B,228000.0,EQUITY,https://www.microsoft.com
+9,AMZN,"Amazon.com, Inc.",2563795845120,$2.56T,238.335,USD,NMS,United States,Consumer Cyclical,Internet Retail,30.87,742775980032.0,$742.78B,1575000.0,EQUITY,https://www.amazon.com
+10,6383.T,"Daifuku Co., Ltd.",2341576376320,$2.34T,6368.0,JPY,JPX,Japan,Industrials,Specialty Industrial Machinery,31.48,673177993216.0,$673.18B,11417.0,EQUITY,https://www.daifuku.com
+11,AVGO,Broadcom Inc.,1781999206400,$1.78T,374.61,USD,NMS,United States,Technology,Semiconductors,62.43,75464998912.0,$75.46B,33000.0,EQUITY,https://www.broadcom.com
+12,6506.T,YASKAWA Electric Corporation,1553095327744,$1.55T,5988.0,JPY,JPX,Japan,Industrials,Electrical Equipment & Parts,44.17,542121984000.0,$542.12B,12483.0,EQUITY,https://www.yaskawa.co.jp
+13,META,"Meta Platforms, Inc.",1453056983040,$1.45T,572.425,USD,NMS,United States,Communication Services,Internet Content & Information,20.83,214962995200.0,$214.96B,77986.0,EQUITY,https://www.meta.com
+14,TSLA,"Tesla, Inc.",1435445493760,$1.44T,382.18,USD,NMS,United States,Consumer Cyclical,Auto Manufacturers,357.2,97878999040.0,$97.88B,134785.0,EQUITY,https://www.tesla.com
+15,6645.T,OMRON Corporation,1078905470976,$1.08T,5487.0,JPY,JPX,Japan,Technology,Electronic Components,31.62,767350996992.0,$767.35B,,EQUITY,https://www.omron.com
+16,INTC,Intel Corporation,537078333440,$537.08B,106.9,USD,NMS,United States,Technology,Semiconductors,,53762998272.0,$53.76B,85100.0,EQUITY,https://www.intel.com
+17,9888.HK,"Baidu, Inc.",317659873280,$317.66B,116.7,HKD,HKG,China,Communication Services,Internet Content & Information,,128701997056.0,$128.70B,33500.0,EQUITY,https://ir.baidu.com
+18,PLTR,Palantir Technologies Inc.,313832112128,$313.83B,130.91,USD,NMS,United States,Technology,Software - Infrastructure,148.76,5224174080.0,$5.22B,4395.0,EQUITY,https://www.palantir.com
+19,IBM,International Business Machines Corporation,257566179328,$257.57B,274.04,USD,NYQ,United States,Technology,Information Technology Services,24.27,68910997504.0,$68.91B,264300.0,EQUITY,https://www.ibm.com
+20,TXN,Texas Instruments Incorporated,257119404032,$257.12B,282.52,USD,NMS,United States,Technology,Semiconductors,48.21,18438000640.0,$18.44B,33000.0,EQUITY,https://www.ti.com
+21,SIEGY,Siemens Aktiengesellschaft,229986500608,$229.99B,149.51,USD,PNK,Germany,Industrials,Specialty Industrial Machinery,26.84,79699001344.0,$79.70B,303061.0,EQUITY,https://www.siemens.com
+22,ADI,"Analog Devices, Inc.",192141230080,$192.14B,394.47,USD,NMS,United States,Technology,Semiconductors,58.7,12740193280.0,$12.74B,24500.0,EQUITY,https://www.analog.com
+23,ISRG,"Intuitive Surgical, Inc.",147034243072,$147.03B,415.16,USD,NMS,United States,Healthcare,Medical Instruments & Supplies,50.44,10582099968.0,$10.58B,17021.0,EQUITY,https://www.intuitive.com
+24,HON,Honeywell International Inc.,131660447744,$131.66B,207.78,USD,NMS,United States,Industrials,Conglomerates,33.19,37660000256.0,$37.66B,101000.0,EQUITY,https://www.honeywell.com
+25,SYK,Stryker Corporation,118295552000,$118.30B,308.575,USD,NYQ,United States,Healthcare,Medical Devices,35.71,25269999616.0,$25.27B,56000.0,EQUITY,https://www.stryker.com
+26,9868.HK,XPeng Inc.,113829912576,$113.83B,59.55,HKD,HKG,China,Consumer Cyclical,Auto Manufacturers,,73942892544.0,$73.94B,19884.0,EQUITY,https://www.xpeng.com
+27,PH,Parker-Hannifin Corporation,111528452096,$111.53B,884.54,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,32.66,20987000832.0,$20.99B,57950.0,EQUITY,https://www.parker.com
+28,2015.HK,Li Auto Inc.,110534008832,$110.53B,54.7,HKD,HKG,China,Consumer Cyclical,Auto Manufacturers,,109368606720.0,$109.37B,30728.0,EQUITY,https://www.lixiang.com
+29,MDT,Medtronic plc,103115218944,$103.12B,80.315,USD,NYQ,Ireland,Healthcare,Medical Devices,21.53,36364001280.0,$36.36B,95000.0,EQUITY,https://www.medtronic.com
+30,9866.HK,NIO Inc.,102127362048,$102.13B,40.54,HKD,HKG,China,Consumer Cyclical,Auto Manufacturers,,100985438208.0,$100.99B,35032.0,EQUITY,https://www.nio.com
+31,EMR,Emerson Electric Co.,76866437120,$76.87B,137.237,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,31.77,18315999232.0,$18.32B,71000.0,EQUITY,https://www.emerson.com
+32,MPWR,"Monolithic Power Systems, Inc.",72614141952,$72.61B,1478.0,USD,NMS,United States,Technology,Semiconductors,106.03,2957090048.0,$2.96B,4501.0,EQUITY,https://www.monolithicpower.com
+33,ITW,Illinois Tool Works Inc.,72496087040,$72.50B,251.985,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,23.38,16220999680.0,$16.22B,43000.0,EQUITY,https://www.itw.com
+34,GM,General Motors Company,72133214208,$72.13B,80.0,USD,NYQ,United States,Consumer Cyclical,Auto Manufacturers,29.2,184623005696.0,$184.62B,156000.0,EQUITY,https://www.gm.com
+35,COHR,Coherent Corp.,70138658816,$70.14B,358.51,USD,NYQ,United States,Technology,Scientific & Technical Instruments,170.72,6602083840.0,$6.60B,30216.0,EQUITY,https://www.coherent.com
+36,LITE,Lumentum Holdings Inc.,67204808704,$67.20B,863.815,USD,NMS,United States,Technology,Communication Equipment,152.35,2488399872.0,$2.49B,10562.0,EQUITY,https://www.lumentum.com
+37,F,Ford Motor Company,57120571392,$57.12B,14.335,USD,NYQ,United States,Consumer Cyclical,Auto Manufacturers,,189861003264.0,$189.86B,168000.0,EQUITY,https://www.ford.com
+38,TER,"Teradyne, Inc.",54514241536,$54.51B,348.24,USD,NMS,United States,Technology,Semiconductor Equipment & Materials,64.61,3786838016.0,$3.79B,6600.0,EQUITY,https://www.teradyne.com
+39,AME,"AMETEK, Inc.",50949533696,$50.95B,222.29,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,33.58,7597581824.0,$7.60B,22500.0,EQUITY,https://www.ametek.com
+40,ROK,"Rockwell Automation, Inc.",49297698816,$49.30B,443.03,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,46.05,8803999744.0,$8.80B,26000.0,EQUITY,https://www.rockwellautomation.com
+41,MCHP,Microchip Technology Incorporated,47702978560,$47.70B,88.0,USD,NMS,United States,Technology,Semiconductors,400.0,4713099776.0,$4.71B,17900.0,EQUITY,https://www.microchip.com
+42,HEI,HEICO Corporation,45178380288,$45.18B,323.49,USD,NYQ,United States,Industrials,Aerospace & Defense,57.66,4911297024.0,$4.91B,11100.0,EQUITY,https://www.heico.com
+43,ON,ON Semiconductor Corporation,42702258176,$42.70B,109.83,USD,NMS,United States,Technology,Semiconductors,80.76,6063000064.0,$6.06B,22600.0,EQUITY,https://www.onsemi.com
+44,002747.SZ,"Estun Automation Co., Ltd",34647183360,$34.65B,35.8,CNY,SHZ,China,Industrials,Specialty Industrial Machinery,238.67,4860435456.0,$4.86B,3261.0,EQUITY,https://www.estun.com
+45,DOV,Dover Corporation,29152849920,$29.15B,216.49,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,27.06,8280135168.0,$8.28B,24000.0,EQUITY,https://www.dovercorporation.com
+46,DXCM,"DexCom, Inc.",29040801792,$29.04B,75.26,USD,NMS,United States,Healthcare,Medical Devices,32.3,4817900032.0,$4.82B,11000.0,EQUITY,https://www.dexcom.com
+47,TDY,Teledyne Technologies Incorporated,28192669696,$28.19B,608.53,USD,NYQ,United States,Technology,Scientific & Technical Instruments,30.81,6225600000.0,$6.23B,15800.0,EQUITY,https://www.teledyne.com
+48,IR,Ingersoll Rand Inc.,27880794112,$27.88B,71.245,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,48.14,7781300224.0,$7.78B,21000.0,EQUITY,https://www.irco.com
+49,688169.SS,"Beijing Roborock Technology Co., Ltd.",27295021056,$27.30B,105.28,CNY,SHH,China,Industrials,Specialty Industrial Machinery,19.18,19493924864.0,$19.49B,3452.0,EQUITY,https://us.roborock.com
+50,OTIS,Otis Worldwide Corporation,26921521152,$26.92B,70.16,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,18.66,14647000064.0,$14.65B,72000.0,EQUITY,https://www.otis.com
+51,NVT,nVent Electric plc,25422454784,$25.42B,157.2,USD,NYQ,United Kingdom,Industrials,Electrical Equipment & Parts,53.65,4325799936.0,$4.33B,12000.0,EQUITY,https://www.nvent.com
+52,300024.SZ,"Siasun Robot&Automation Co.,Ltd.",25269104640,$25.27B,16.14,CNY,SHZ,China,Industrials,Specialty Industrial Machinery,,4063856128.0,$4.06B,3585.0,EQUITY,https://www.siasun.com
+53,MKSI,MKS Inc.,21157521408,$21.16B,313.24,USD,NMS,United States,Technology,Scientific & Technical Instruments,65.53,4072999936.0,$4.07B,10200.0,EQUITY,https://www.mks.com
+54,RBC,RBC Bearings Incorporated,18313711616,$18.31B,578.9,USD,NYQ,United States,Industrials,Tools & Accessories,63.9,1870899968.0,$1.87B,5816.0,EQUITY,https://www.rbcbearings.com
+55,LSCC,Lattice Semiconductor Corporation,18278217728,$18.28B,133.41,USD,NMS,United States,Technology,Semiconductors,952.93,574009024.0,$574.01M,1174.0,EQUITY,https://www.latticesemi.com
+56,NDSN,Nordson Corporation,15628883968,$15.63B,280.5,USD,NMS,United States,Industrials,Specialty Industrial Machinery,29.94,2903636992.0,$2.90B,8200.0,EQUITY,https://www.nordson.com
+57,CSGP,"CoStar Group, Inc.",13939221504,$13.94B,34.135,USD,NMS,United States,Real Estate,Real Estate Services,487.64,3412000000.0,$3.41B,8441.0,EQUITY,https://www.costargroup.com
+58,RRX,Regal Rexnord Corporation,13406445568,$13.41B,201.39,USD,NYQ,United States,Industrials,Specialty Industrial Machinery,46.73,5995500032.0,$6.00B,30000.0,EQUITY,https://www.regalrexnord.com
+59,AEIS,"Advanced Energy Industries, Inc.",12239660032,$12.24B,305.91,USD,NMS,United States,Industrials,Electrical Equipment & Parts,63.73,1905200000.0,$1.91B,13000.0,EQUITY,https://www.advancedenergy.com
+60,TRMB,Trimble Inc.,11932978176,$11.93B,51.19,USD,NMS,United States,Technology,Scientific & Technical Instruments,26.8,3686599936.0,$3.69B,11500.0,EQUITY,https://www.trimble.com
+61,APLD,Applied Digital Corporation,11170731008,$11.17B,39.09,USD,NMS,United States,Technology,Information Technology Services,,319262016.0,$319.26M,205.0,EQUITY,https://applieddigital.com
+62,GMED,"Globus Medical, Inc.",10953057280,$10.95B,80.6887,USD,NYQ,United States,Healthcare,Medical Devices,18.85,3100664064.0,$3.10B,6000.0,EQUITY,https://www.globusmedical.com
+63,ZBRA,Zebra Technologies Corporation,10368121856,$10.37B,217.665,USD,NMS,United States,Technology,Communication Equipment,26.26,5583000064.0,$5.58B,10700.0,EQUITY,https://www.zebra.com
+64,KTOS,"Kratos Defense & Security Solutions, Inc.",10276094976,$10.28B,54.8,USD,NMS,United States,Industrials,Aerospace & Defense,322.35,1415200000.0,$1.42B,4300.0,EQUITY,https://www.kratosdefense.com
+65,AAON,"AAON, Inc.",9808927744,$9.81B,119.75,USD,NMS,United States,Industrials,Building Products & Equipment,84.93,1616957952.0,$1.62B,5897.0,EQUITY,https://www.aaon.com
+66,FORM,"FormFactor, Inc.",9045091328,$9.05B,116.03,USD,NMS,United States,Technology,Semiconductor Equipment & Materials,133.37,839780992.0,$839.78M,2153.0,EQUITY,https://www.formfactor.com
+67,JOBY,"Joby Aviation, Inc.",8803603456,$8.80B,8.95,USD,NYQ,United States,Industrials,Airports & Air Services,,77671000.0,$77.67M,2559.0,EQUITY,https://www.jobyaviation.com
+68,AVAV,"AeroVironment, Inc.",8779473920,$8.78B,173.49,USD,NMS,United States,Industrials,Aerospace & Defense,,1610279040.0,$1.61B,1456.0,EQUITY,https://www.avinc.com
+69,ALGM,"Allegro MicroSystems, Inc.",8294345728,$8.29B,44.54,USD,NMS,United States,Technology,Semiconductors,,890096000.0,$890.10M,4250.0,EQUITY,https://www.allegromicro.com
+70,RGEN,Repligen Corporation,7454846976,$7.45B,132.16,USD,NMS,United States,Healthcare,Medical Instruments & Supplies,145.23,763339008.0,$763.34M,2000.0,EQUITY,https://www.repligen.com
+71,ESTC,Elastic N.V.,6366270976,$6.37B,60.775,USD,NYQ,Netherlands,Technology,Software - Application,17.72,1739330944.0,$1.74B,4019.0,EQUITY,https://www.elastic.co
+72,PATH,"UiPath, Inc.",5603470336,$5.60B,10.815,USD,NYQ,United States,Technology,Software - Infrastructure,18.02,1672329984.0,$1.67B,3981.0,EQUITY,https://www.uipath.com
+73,NOVT,Novanta Inc.,5514851840,$5.51B,154.86,USD,NMS,United States,Technology,Scientific & Technical Instruments,110.61,1004940992.0,$1.00B,3000.0,EQUITY,https://www.novanta.com
+74,ACLS,"Axcelis Technologies, Inc.",4883615744,$4.88B,158.9,USD,NMS,United States,Technology,Semiconductor Equipment & Materials,49.2,845441024.0,$845.44M,1465.0,EQUITY,https://www.axcelis.com
+75,SAIC,Science Applications International Corporation,4846403584,$4.85B,114.635,USD,NMS,United States,Technology,Information Technology Services,12.89,7290999808.0,$7.29B,23000.0,EQUITY,https://www.saic.com
+76,ACHR,Archer Aviation Inc.,3932568576,$3.93B,5.155,USD,NYQ,United States,Industrials,Aerospace & Defense,,1900000.0,$1.90M,1160.0,EQUITY,https://www.archer.com
+77,SOUN,"SoundHound AI, Inc.",2973084160,$2.97B,6.8604,USD,NGM,United States,Technology,Software - Application,,183986000.0,$183.99M,954.0,EQUITY,https://www.soundhound.com
+78,OUST,"Ouster, Inc.",2507440640,$2.51B,39.38,USD,NMS,United States,Technology,Electronic Components,,185330000.0,$185.33M,320.0,EQUITY,https://ouster.com
+79,ROG,Rogers Corporation,2449354496,$2.45B,137.23,USD,NYQ,United States,Technology,Electronic Components,,820800000.0,$820.80M,3000.0,EQUITY,https://www.rogerscorp.com
+80,NVCR,NovoCure Limited,1949845504,$1.95B,16.835,USD,NMS,Switzerland,Healthcare,Medical Devices,,674414016.0,$674.41M,1605.0,EQUITY,https://www.novocure.com
+81,BBAI,"BigBear.ai Holdings, Inc.",1930022400,$1.93B,4.0297,USD,NYQ,United States,Technology,Information Technology Services,,127350000.0,$127.35M,579.0,EQUITY,https://bigbear.ai
+82,ASAN,"Asana, Inc.",1836005248,$1.84B,7.735,USD,NYQ,United States,Technology,Software - Application,,808633984.0,$808.63M,1767.0,EQUITY,https://asana.com
+83,OCDO.L,Ocado Group plc,1665579904,$1.67B,200.0,GBp,LSE,United Kingdom,Consumer Defensive,Grocery Stores,,1381699968.0,$1.38B,21367.0,EQUITY,https://www.ocadogroup.com
+84,RXRX,"Recursion Pharmaceuticals, Inc.",1626786176,$1.63B,3.065,USD,NMS,United States,Healthcare,Biotechnology,,66408000.0,$66.41M,600.0,EQUITY,https://www.recursion.com
+85,AI,"C3.ai, Inc.",1561880576,$1.56B,10.75,USD,NYQ,United States,Technology,Software - Infrastructure,,250268000.0,$250.27M,,EQUITY,https://www.c3.ai
+86,AEVA,"Aeva Technologies, Inc.",1533049088,$1.53B,22.7,USD,NMS,United States,Technology,Software - Infrastructure,,20973000.0,$20.97M,239.0,EQUITY,https://www.aeva.com
+87,ARDX,"Ardelyx, Inc.",1398186368,$1.40B,5.66,USD,NGM,United States,Healthcare,Biotechnology,,427679008.0,$427.68M,489.0,EQUITY,https://www.ardelyx.com
+88,AZTA,"Azenta, Inc.",1046306688,$1.05B,22.7,USD,NMS,United States,Healthcare,Medical Instruments & Supplies,,596483968.0,$596.48M,2900.0,EQUITY,https://www.azenta.com
+89,UAMY,United States Antimony Corporation,1013574784,$1.01B,6.8399,USD,NYQ,United States,Basic Materials,Other Industrial Metals & Mining,,39041772.0,$39.04M,100.0,EQUITY,https://www.usantimony.com
+90,MAKO,Mako Mining Corp.,610325568,$610.33M,6.97,USD,NCM,Canada,Basic Materials,Gold,12.67,185279008.0,$185.28M,,EQUITY,https://www.makominingcorp.com
+91,INVZ,Innoviz Technologies Ltd.,141695952,$141.70M,0.6401,USD,NCM,Israel,Consumer Cyclical,Auto Parts,,44832000.0,$44.83M,372.0,EQUITY,https://innoviz.tech
+92,MVIS,"MicroVision, Inc.",125317424,$125.32M,0.3779,USD,NGM,United States,Technology,Scientific & Technical Instruments,,1554000.0,$1.55M,190.0,EQUITY,https://www.microvision.com
+93,UAVS,"AgEagle Aerial Systems, Inc.",52473720,$52.47M,0.8955,USD,ASE,United States,Technology,Computer Hardware,,10562879.0,$10.56M,58.0,EQUITY,https://www.eaglenxt.com
+94,AIXI,Xiao-I Corporation,7341689,$7.34M,7.975,USD,NGM,China,Technology,Software - Application,,12327684.0,$12.33M,58.0,EQUITY,https://www.xiaoi.com
+95,RBOT,Vicarious Surgical Inc.,3205898,$3.21M,0.45,USD,OQB,United States,Healthcare,Medical Devices,,,N/A,48.0,EQUITY,https://www.vicarioussurgical.com
+96,AGMH,AGM Group Holdings Inc.,2529054,$2.53M,1.1001,USD,NCM,Hong Kong,Technology,Computer Hardware,0.03,48526744.0,$48.53M,10.0,EQUITY,https://agmhgroup.com
