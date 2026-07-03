@@ -16,10 +16,29 @@ class Portfolio():
         if transaction.ticker not in self.positions:
             self.positions[transaction.ticker] = Position(transaction)
         else:
-
             self.positions[transaction.ticker].add_transaction(transaction)
+
     def get_position(self, ticker):
+        if ticker not in self.positions:
+            raise ValueError(f'The Position with {ticker} does not exist, please ask for a valid ticker.')
+
+        return self.positions[ticker]
+    
+    def open_positions(self):
+
+        op_pos = [i for i in self.positions.values() if i.is_open]
+
+        return op_pos
+    
+    def all_positions(self):
+
+        return list(self.positions.values())
+
+
         
+
+
+
 
 
 

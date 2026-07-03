@@ -62,5 +62,5 @@ if __name__ == "__main__":
     pos1 = Position(transcation_test)
     pos1.add_transaction(transaction2)
 
-    print(pos1.ticker)
+    print(pos1.is_open)
 
