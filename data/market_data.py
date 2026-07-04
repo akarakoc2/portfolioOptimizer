@@ -13,9 +13,14 @@ class MarketDataFetcher():
         os.makedirs(self.cache_directory, exist_ok = True)
 
 
-
+    #this fetching helper function to enable correct data ask from the yfinance, asking only data we miss
     def _fetch_missing_data(self, ticker, cached_data, start_date, end_date):
-            
+            #filepath handling for the L2 cache & also timestamp
+
+            file_path = os.path.join(self.cache_directory + ticker + ".parquet")
+            start_date = pd.Timestamp(start_date)
+            end_date = pd.Timestamp(end_date)
+
             if start_date < cached_data.index.min():
                 df_1 = yf.download(ticker, start = start_date, end = cached_data.index.min())
                 cached_data = pd.concat([df_1,cached_data])
@@ -24,11 +29,12 @@ class MarketDataFetcher():
             if end_date > cached_data.index.max():
                 df_1 = yf.download(ticker, start = cached_data.index.max(), end = end_date)
                 cached_data = pd.concat([cached_data, df_1])
-                cached_data =cached_data.sort_index().drop_duplicates()
-                
+                cached_data = cached_data.sort_index().drop_duplicates()
+   
+            self.memory_cache[ticker] = cached_data
+            cached_data.to_parquet(file_path)
 
-
-            return cached_data
+            return cached_data[start_date:end_date]
 
     def get_historical_prices(self, ticker, start_date, end_date):
 
@@ -43,7 +49,9 @@ class MarketDataFetcher():
         if ticker in self.memory_cache:
             dat1 = self.memory_cache[ticker]
             if dat1.index.min() <= start_date and dat1.index.max() >= end_date:
-                return dat1[start_date:end_date] 
+                return dat1[start_date:end_date]
+            else:
+                return self._fetch_missing_data(ticker, dat1, start_date, end_date) 
             
         #L2 layer of the cache 
         elif os.path.exists(file_path):
@@ -57,12 +65,13 @@ class MarketDataFetcher():
                 cache_data = pd.read_parquet(file_path)
                 self.memory_cache[ticker] = cache_data
                 if cache_data.index.min() <= start_date and cache_data.index.max() >= end_date:
-                    return cache_data[start_date:end_date] 
+                    return cache_data[start_date:end_date]
+                else:
+                    return self._fetch_missing_data(ticker, cache_data, start_date, end_date) 
 
         #L3 cache layer here.. 
         else:
             dat = yf.download(ticker, start = start_date, end = end_date)
-
             self.memory_cache[ticker] = dat
             dat.to_parquet(file_path)
             return dat
