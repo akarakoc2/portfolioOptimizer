@@ -12,12 +12,40 @@ class MarketDataFetcher():
         #directly checking if the cache exist if not the directory will be created automatically. 
         os.makedirs(self.cache_directory, exist_ok = True)
 
+
+
+    def _fetch_missing_data(self, ticker, cached_data, start_date, end_date):
+            
+            if start_date < cached_data.index.min():
+                df_1 = yf.download(ticker, start = start_date, end = cached_data.index.min())
+                cached_data = pd.concat([df_1,cached_data])
+                cached_data =cached_data.sort_index().drop_duplicates()
+
+            if end_date > cached_data.index.max():
+                df_1 = yf.download(ticker, start = cached_data.index.max(), end = end_date)
+                cached_data = pd.concat([cached_data, df_1])
+                cached_data =cached_data.sort_index().drop_duplicates()
+                
+
+
+            return cached_data
+
     def get_historical_prices(self, ticker, start_date, end_date):
 
+        #file path and timestamp for the entries here
         file_path = os.path.join(self.cache_directory + ticker + ".parquet")
+        start_date = pd.Timestamp(start_date)
+        end_date = pd.Timestamp(end_date)
+
+        #helper function for the data handling over cache
+
+        #here the 1st layer of the memory cache
         if ticker in self.memory_cache:
-            return self.memory_cache[ticker]
-        
+            dat1 = self.memory_cache[ticker]
+            if dat1.index.min() <= start_date and dat1.index.max() >= end_date:
+                return dat1[start_date:end_date] 
+            
+        #L2 layer of the cache 
         elif os.path.exists(file_path):
             #we have to translate the time to normal date because when we read it gives with seconds since 1970
             last_save = os.path.getmtime(file_path)
@@ -28,9 +56,13 @@ class MarketDataFetcher():
             if diff < timedelta(self.cache_expiry_days):
                 cache_data = pd.read_parquet(file_path)
                 self.memory_cache[ticker] = cache_data
-                return cache_data
+                if cache_data.index.min() <= start_date and cache_data.index.max() >= end_date:
+                    return cache_data[start_date:end_date] 
+
+        #L3 cache layer here.. 
         else:
             dat = yf.download(ticker, start = start_date, end = end_date)
+
             self.memory_cache[ticker] = dat
             dat.to_parquet(file_path)
             return dat
