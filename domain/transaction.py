@@ -31,7 +31,7 @@ class Transaction:
         self.quantity = quantity
         self.cost_per_unit = cost_per_unit
         self.fees = fees
-        self. currency = currency
+        self.currency = currency
 
 
         if self.transaction_type == "BUY":
@@ -39,5 +39,6 @@ class Transaction:
         elif self.transaction_type == "SELL":
             self.total_cost = - (self.cost_per_unit * self.quantity) - self.fees 
 
-
+    def __repr__(self):
+        return f"Transaction | {self.ticker} | {self.transaction_type} | Price: {self.cost_per_unit} | Total: {self.total_cost} | {self.currency} | {self.transaction_date}"
 

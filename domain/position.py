@@ -1,4 +1,4 @@
-from transaction import Transaction
+from domain.transaction import Transaction
 
 
 class Position():
@@ -53,14 +53,7 @@ class Position():
     def is_open(self):
         return self.net_quantity > 0 
 
-            
-    
-if __name__ == "__main__":
-    
-    transcation_test = Transaction('AAPL', 2000,'BUY', 3,5,1,'EUR')
-    transaction2 = Transaction('aapl', 4000,'BUY', 6,6,4,'EUR')
-    pos1 = Position(transcation_test)
-    pos1.add_transaction(transaction2)
 
-    print(pos1.is_open)
-
+    def __repr__(self):
+        return f"Position | {self.ticker} | {self.net_quantity} | {self.average_cost_basis} | Open: {self.is_open} | Open Since: {self.opening_date} "
+       
