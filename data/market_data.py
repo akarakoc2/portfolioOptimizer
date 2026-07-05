@@ -82,6 +82,25 @@ class MarketDataFetcher():
             return dat
 
 
+    def fetch_current_price(self, ticker):
+        today = datetime.now()
+
+        try:
+            current_data = self.get_historical_prices(ticker = ticker, start_date = today - timedelta(days=7), end_date = today)
+            current_data = current_data["Close"].iloc[-1]
+            return current_data
+        
+        except Exception as e:
+            print(f"The price value for today can not be fetched due to {e}")
+
+            
+    
+
+
+
+
+                
+
 
 
 
