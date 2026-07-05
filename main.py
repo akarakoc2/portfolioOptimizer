@@ -25,6 +25,6 @@ if __name__ == "__main__":
     # data_multiple = fetcher.fetch_multiple(tickers, start_date = "2025-01-01", end_date = "2026-01-01")
     # print(data_multiple)
 
-    ticker = "aapl" 
-    div = yf.Ticker(ticker).dividends
-    print(div["2025-01-01":"2026-01-01"])
+    # ticker = "aapl" 
+    # div = yf.Ticker(ticker).dividends
+    # print(div["2025-01-01":"2026-01-01"])

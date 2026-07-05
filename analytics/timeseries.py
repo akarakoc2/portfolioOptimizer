@@ -1,0 +1,78 @@
+from domain.portfolio import Portfolio
+from domain.position import Position
+from domain.transaction import Transaction
+from datetime import datetime
+import pandas as pd
+
+
+
+class PortfolioTimeSeries():
+    def __init__(self, portfolio, fetcher, start_date = None, end_date = None):
+        self.portfolio = portfolio
+        if start_date is None:
+            self.start_date = self.portfolio.creation_date
+        else:
+            self.start_date = start_date
+        if end_date is None:
+            self.end_date = datetime.now()
+        else:
+            self.end_date = end_date
+
+        self.fetcher = fetcher
+        self.tickers = self.portfolio.positions.keys()
+        self.trading_days = pd.bdate_range(self.start_date, self.end_date)
+
+    def build_holding_frames(self):
+        all_transactions=[]
+        for position in self.portfolio.positions.values():
+            for transaction in position.transactions:
+                all_transactions.append(transaction)
+        all_transactions = sorted(all_transactions, key = lambda t: t.transaction_date)
+
+        list_dicts = []
+        for transaction in all_transactions:
+            date = transaction.transaction_date
+            ticker = transaction.ticker
+
+            if transaction.transaction_type == 'BUY':
+                quantity_norm = transaction.quantity
+                transaction_dict = {"date":date, "ticker":ticker, "quantity": quantity_norm}
+                list_dicts.append(transaction_dict)
+            else:
+                quantity_norm = - transaction.quantity
+                transaction_dict = {"date":date, "ticker":ticker, "quantity": quantity_norm}
+                list_dicts.append(transaction_dict)
+
+        df = pd.DataFrame(list_dicts)
+        df = df.pivot_table(index="date", columns="ticker", values="quantity", aggfunc="sum")      
+        df = df.cumsum()
+        df = df.reindex(self.trading_days)
+        df = df.ffill()
+        df= df.fillna(0)
+        return df
+    
+
+    def build_price_frames(self):
+        prices = dict()
+        
+        df = self.fetcher.fetch_multiple(self.tickers, self.start_date, self.end_date)
+
+        for ticker in df.keys():
+            close_column = df[ticker]["Close"]
+            prices[ticker] = close_column
+
+        prices_df = pd.DataFrame(prices)
+        prices_df.index = prices_df.index.tz_localize(None)
+        prices_df = prices_df.reindex(self.trading_days)
+        if prices_df.empty:
+            raise ValueError("Data reindexing problem has occured please check the reindexing")
+        prices_df = prices_df.ffill()
+        prices_df = prices_df.fillna(0)
+
+        return prices_df
+
+
+
+        
+        
+            
