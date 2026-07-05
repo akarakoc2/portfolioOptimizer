@@ -1,7 +1,8 @@
 from domain.transaction import Transaction
 from domain.position import Position
 from domain.portfolio import Portfolio
-
+from data.market_data import MarketDataFetcher
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -16,3 +17,7 @@ if __name__ == "__main__":
     print(transaction2)
     print('\n')
     print(pos1)
+    fetcher = MarketDataFetcher()
+    appl_data = fetcher.get_historical_prices(ticker = "OUST", start_date = '2024-01-01', end_date = "2025-01-01")
+    
+  

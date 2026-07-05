@@ -16,20 +16,25 @@ class MarketDataFetcher():
     #this fetching helper function to enable correct data ask from the yfinance, asking only data we miss
     def _fetch_missing_data(self, ticker, cached_data, start_date, end_date):
             #filepath handling for the L2 cache & also timestamp
-
-            file_path = os.path.join(self.cache_directory + ticker + ".parquet")
+            
+            file_path = os.path.join(self.cache_directory, ticker + ".parquet")
             start_date = pd.Timestamp(start_date)
             end_date = pd.Timestamp(end_date)
 
+            
             if start_date < cached_data.index.min():
-                df_1 = yf.download(ticker, start = start_date, end = cached_data.index.min())
-                cached_data = pd.concat([df_1,cached_data])
-                cached_data =cached_data.sort_index().drop_duplicates()
+                business_days = pd.bdate_range(start=start_date, end= cached_data.index.min()) #this gives us the business days
+                if len(business_days) > 3: #business day check if we have enough to ask from yfinance
+                    df_1 = yf.download(ticker, start = start_date, end = cached_data.index.min())
+                    cached_data = pd.concat([df_1,cached_data])
+                    cached_data =cached_data.sort_index().drop_duplicates()
 
             if end_date > cached_data.index.max():
-                df_1 = yf.download(ticker, start = cached_data.index.max(), end = end_date)
-                cached_data = pd.concat([cached_data, df_1])
-                cached_data = cached_data.sort_index().drop_duplicates()
+                business_days = pd.bdate_range(start=cached_data.index.max(), end= end_date)
+                if len(business_days) > 3:
+                    df_1 = yf.download(ticker, start = cached_data.index.max(), end = end_date)
+                    cached_data = pd.concat([cached_data, df_1])
+                    cached_data = cached_data.sort_index().drop_duplicates()
    
             self.memory_cache[ticker] = cached_data
             cached_data.to_parquet(file_path)
@@ -39,7 +44,7 @@ class MarketDataFetcher():
     def get_historical_prices(self, ticker, start_date, end_date):
 
         #file path and timestamp for the entries here
-        file_path = os.path.join(self.cache_directory + ticker + ".parquet")
+        file_path = os.path.join(self.cache_directory, ticker + ".parquet")
         start_date = pd.Timestamp(start_date)
         end_date = pd.Timestamp(end_date)
 
