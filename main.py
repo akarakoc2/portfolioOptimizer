@@ -3,7 +3,7 @@ from domain.position import Position
 from domain.portfolio import Portfolio
 from data.market_data import MarketDataFetcher
 import pandas as pd
-
+import yfinance as yf
 
 if __name__ == "__main__":
     
@@ -18,5 +18,13 @@ if __name__ == "__main__":
     # print('\n')
     # print(pos1)
     # fetcher = MarketDataFetcher()
-    # appl_data = fetcher.get_historical_prices(ticker = "OUST", start_date = '2024-01-01', end_date = "2025-01-01")
-    
+    # last_price = fetcher.fetch_current_price(ticker = "AAPL")
+    # print(last_price)
+
+    # tickers = ["aapl","tsla","oust","msft"]
+    # data_multiple = fetcher.fetch_multiple(tickers, start_date = "2025-01-01", end_date = "2026-01-01")
+    # print(data_multiple)
+
+    ticker = "aapl" 
+    div = yf.Ticker(ticker).dividends
+    print(div["2025-01-01":"2026-01-01"])

@@ -94,8 +94,22 @@ class MarketDataFetcher():
             print(f"The price value for today can not be fetched due to {e}")
 
             
-    
+    def fetch_multiple(self, tickers, start_date, end_date):
 
+        data_multiple = dict()
+
+        for ticker in tickers:
+            data_price = self.get_historical_prices(ticker=ticker, start_date= start_date, end_date= end_date)
+            data_multiple[ticker] = data_price
+        return data_multiple
+
+
+    def fetch_dividends(self, ticker, start_date, end_date):
+
+        dividends= yf.Ticker(ticker).dividends
+        filter_div = dividends[start_date:end_date]
+        
+        return filter_div
 
 
 
