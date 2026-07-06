@@ -72,7 +72,13 @@ class MarketDataFetcher():
                 if cache_data.index.min() <= start_date and cache_data.index.max() >= end_date:
                     return cache_data[start_date:end_date]
                 else:
-                    return self._fetch_missing_data(ticker, cache_data, start_date, end_date) 
+                    return self._fetch_missing_data(ticker, cache_data, start_date, end_date)
+            else:
+                print(f"Cache expired for {ticker}. Fetching fresh data...")
+                dat = yf.download(ticker, start=start_date, end=end_date)
+                self.memory_cache[ticker] = dat
+                dat.to_parquet(file_path)
+                return dat
 
         #L3 cache layer here.. 
         else:

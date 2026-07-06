@@ -4,27 +4,26 @@ from domain.portfolio import Portfolio
 from data.market_data import MarketDataFetcher
 import pandas as pd
 import yfinance as yf
+from analytics.timeseries import PortfolioTimeSeries
 
 if __name__ == "__main__":
-    
-    # transcation_test = Transaction('AAPL', 20220603,'BUY', 3,5,1,'EUR')
-    # transaction2 = Transaction('aapl', 20220603,'BUY', 1,6,4,'EUR')
-    # pos1 = Position(transcation_test)
-    # pos1.add_transaction(transaction2)
-    # port1 = Portfolio("ATK_1", "EUR")
-    # port1.add_transaction(transaction=transcation_test)
-    
-    # print(transaction2)
-    # print('\n')
-    # print(pos1)
-    # fetcher = MarketDataFetcher()
-    # last_price = fetcher.fetch_current_price(ticker = "AAPL")
-    # print(last_price)
 
-    # tickers = ["aapl","tsla","oust","msft"]
-    # data_multiple = fetcher.fetch_multiple(tickers, start_date = "2025-01-01", end_date = "2026-01-01")
-    # print(data_multiple)
+    # 1. Create your transactions
+    transaction1 = Transaction('aapl', '2024-01-01','BUY', 5, 150, 1,'USD')
+    transaction2 = Transaction('aapl', '2024-01-02','BUY', 5, 150, 1,'USD')
 
-    # ticker = "aapl" 
-    # div = yf.Ticker(ticker).dividends
-    # print(div["2025-01-01":"2026-01-01"])
+
+    # 2. Create your portfolio
+    port1 = Portfolio("ATK_1", "USD", creation_date = '2024-01-01')
+
+    # 3. Add transactions directly to the portfolio. 
+    # Your Portfolio class will automatically group them into an 'aapl' Position!
+    port1.add_transaction(transaction1)
+    port1.add_transaction(transaction2)
+    
+    # 4. Run your timeseries
+    fetcher = MarketDataFetcher()
+    time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date="2024-01-01", end_date="2024-02-01")
+    
+    a = time_s.portfolio_value()
+    print(a)

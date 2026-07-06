@@ -24,15 +24,18 @@ class PortfolioTimeSeries():
 
     def build_holding_frames(self):
         all_transactions=[]
+
         for position in self.portfolio.positions.values():
             for transaction in position.transactions:
                 all_transactions.append(transaction)
         all_transactions = sorted(all_transactions, key = lambda t: t.transaction_date)
 
         list_dicts = []
+       
         for transaction in all_transactions:
-            date = transaction.transaction_date
+            date = pd.Timestamp(transaction.transaction_date)
             ticker = transaction.ticker
+            
 
             if transaction.transaction_type == 'BUY':
                 quantity_norm = transaction.quantity
@@ -55,17 +58,39 @@ class PortfolioTimeSeries():
     def build_price_frames(self):
         prices = dict()
         
+        # Fetch the data
         df = self.fetcher.fetch_multiple(self.tickers, self.start_date, self.end_date)
 
         for ticker in df.keys():
+            # Defensive checks from our previous fix
+            if df[ticker] is None or df[ticker].empty:
+                print(f"WARNING: Data for {ticker} is missing or empty. Skipping...")
+                continue 
+            
+            if "Close" not in df[ticker]:
+                print(f"WARNING: 'Close' column missing for {ticker}. Skipping...")
+                continue
+
+            # Extract the Close column data
             close_column = df[ticker]["Close"]
+            
+            # 🛠️ THE FIX: If yfinance returned a 2D DataFrame, squeeze it into a 1D Series!
+            if isinstance(close_column, pd.DataFrame):
+                close_column = close_column.squeeze()
+
             prices[ticker] = close_column
 
         prices_df = pd.DataFrame(prices)
+        
+        if prices_df.empty:
+            raise ValueError("No valid price data was returned for any tickers in the portfolio.")
+
         prices_df.index = prices_df.index.tz_localize(None)
         prices_df = prices_df.reindex(self.trading_days)
+        
         if prices_df.empty:
-            raise ValueError("Data reindexing problem has occured please check the reindexing")
+            raise ValueError("Data reindexing problem has occurred please check the reindexing")
+            
         prices_df = prices_df.ffill()
         prices_df = prices_df.fillna(0)
 
@@ -81,6 +106,8 @@ class PortfolioTimeSeries():
         
     def portfolio_value(self):
 
-        self.build_value_frame().sum(axis=1)
+        portfolio_val = self.build_value_frame().sum(axis=1)
+
+        return portfolio_val
 
             
