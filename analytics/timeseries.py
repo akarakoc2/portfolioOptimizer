@@ -72,7 +72,15 @@ class PortfolioTimeSeries():
         return prices_df
 
 
+    def build_value_frame(self):
+        holding_frames = self.build_holding_frames()
+        build_prices = self.build_price_frames()
+        daily_values = holding_frames * build_prices   
+        return daily_values
+    
+        
+    def portfolio_value(self):
 
-        
-        
+        self.build_value_frame().sum(axis=1)
+
             
