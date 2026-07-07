@@ -4,8 +4,6 @@ from domain.transaction import Transaction
 from datetime import datetime
 import pandas as pd
 
-
-
 class PortfolioTimeSeries():
     def __init__(self, portfolio, fetcher, start_date = None, end_date = None):
         self.portfolio = portfolio
@@ -74,7 +72,7 @@ class PortfolioTimeSeries():
             # Extract the Close column data
             close_column = df[ticker]["Close"]
             
-            # 🛠️ THE FIX: If yfinance returned a 2D DataFrame, squeeze it into a 1D Series!
+            
             if isinstance(close_column, pd.DataFrame):
                 close_column = close_column.squeeze()
 
@@ -109,5 +107,10 @@ class PortfolioTimeSeries():
         portfolio_val = self.build_value_frame().sum(axis=1)
 
         return portfolio_val
-
-            
+    
+    def portfolio_returns(self):
+        port_val = self.portfolio_value()
+        percentage_chg = port_val.pct_change()
+        percentage_chg = percentage_chg.dropna()
+        percentage_chg = percentage_chg.replace([float('inf'), float('-inf')], float('nan'))
+        return percentage_chg

@@ -26,4 +26,5 @@ if __name__ == "__main__":
     time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date="2024-01-01", end_date="2024-02-01")
     
     a = time_s.portfolio_value()
-    print(a)
+    b = time_s.portfolio_returns()
+    print(b)
