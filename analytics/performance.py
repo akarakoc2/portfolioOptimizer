@@ -52,6 +52,8 @@ class PerformanceCalculator():
     def get_tearsheet_returns(self):
         anchor = self.portfolio_returns.index.max()
         inception_date = self.portfolio_returns.index.min()
+        ytd_start = pd.Timestamp(year=anchor.year, month=1, day=1)
+        
 
         target_days = {"1M":1, "3M":3, "6M":6, "1Y":12, "5Y": 60}
 
@@ -64,6 +66,7 @@ class PerformanceCalculator():
                     target_start = inception_date
 
             port_ret = self._calculate_window_return(start_date=target_start, end_date = anchor)
+            target_days_returns["YTD"] = self._calculate_window_return(ytd_start, anchor)
             target_days_returns[label] = port_ret
 
         return target_days_returns
