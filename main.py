@@ -5,13 +5,15 @@ from data.market_data import MarketDataFetcher
 import pandas as pd
 import yfinance as yf
 from analytics.timeseries import PortfolioTimeSeries
+from analytics.performance import PerformanceCalculator
 
 if __name__ == "__main__":
 
     # 1. Create your transactions
-    transaction1 = Transaction('aapl', '2024-01-01','BUY', 5, 150, 1,'USD')
-    transaction2 = Transaction('aapl', '2024-01-02','BUY', 5, 150, 1,'USD')
-
+    transaction1 = Transaction('aapl', '2024-01-01','BUY', 5, 100, 1,'USD')
+    transaction2 = Transaction('msft', '2024-01-15','BUY', 5, 120, 1,'USD')
+    transaction3 = Transaction('tsla', '2024-01-18','BUY', 2, 10 , 1,'USD')
+    transaction4 = Transaction('nvda', '2024-01-18','BUY', 2, 200 , 1,'USD')
 
     # 2. Create your portfolio
     port1 = Portfolio("ATK_1", "USD", creation_date = '2024-01-01')
@@ -20,11 +22,16 @@ if __name__ == "__main__":
     # Your Portfolio class will automatically group them into an 'aapl' Position!
     port1.add_transaction(transaction1)
     port1.add_transaction(transaction2)
+    port1.add_transaction(transaction3)
+    port1.add_transaction(transaction4)
     
     # 4. Run your timeseries
     fetcher = MarketDataFetcher()
-    time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date="2024-01-01", end_date="2024-02-01")
+    time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date="2024-01-01", end_date="2025-01-01")
     
     a = time_s.portfolio_value()
     b = time_s.portfolio_returns()
-    print(b)
+    c = PerformanceCalculator(portfolio_value = a, portfolio_returns = b)
+    d = c.total_return()
+
+    print(d)

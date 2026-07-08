@@ -43,6 +43,7 @@ class MarketDataFetcher():
 
     def get_historical_prices(self, ticker, start_date, end_date):
 
+
         #file path and timestamp for the entries here
         file_path = os.path.join(self.cache_directory, ticker + ".parquet")
         start_date = pd.Timestamp(start_date)
@@ -67,7 +68,19 @@ class MarketDataFetcher():
             diff = today - last_save
             
             if diff < timedelta(self.cache_expiry_days):
+
+                #here we must take care of the parquet file if it is empty or not or our code might
+                #break here, if we do not get a data from yfinance it will directly save the empty df
                 cache_data = pd.read_parquet(file_path)
+
+                if cache_data.empty:
+                    print(f"Warning: Cached file for {ticker} is empty. Fetching fresh data...")
+                    dat = yf.download(ticker, start=start_date, end=end_date)
+                    self.memory_cache[ticker] = dat
+                    dat.to_parquet(file_path)
+                    return dat
+                    
+
                 self.memory_cache[ticker] = cache_data
                 if cache_data.index.min() <= start_date and cache_data.index.max() >= end_date:
                     return cache_data[start_date:end_date]

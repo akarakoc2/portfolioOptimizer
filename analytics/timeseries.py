@@ -55,10 +55,11 @@ class PortfolioTimeSeries():
 
     def build_price_frames(self):
         prices = dict()
+
         
         # Fetch the data
         df = self.fetcher.fetch_multiple(self.tickers, self.start_date, self.end_date)
-
+        
         for ticker in df.keys():
             # Defensive checks from our previous fix
             if df[ticker] is None or df[ticker].empty:
@@ -84,6 +85,7 @@ class PortfolioTimeSeries():
             raise ValueError("No valid price data was returned for any tickers in the portfolio.")
 
         prices_df.index = prices_df.index.tz_localize(None)
+        prices_df = prices_df[~prices_df.index.duplicated(keep='last')]
         prices_df = prices_df.reindex(self.trading_days)
         
         if prices_df.empty:
@@ -91,6 +93,7 @@ class PortfolioTimeSeries():
             
         prices_df = prices_df.ffill()
         prices_df = prices_df.fillna(0)
+        
 
         return prices_df
 
@@ -105,12 +108,14 @@ class PortfolioTimeSeries():
     def portfolio_value(self):
 
         portfolio_val = self.build_value_frame().sum(axis=1)
+        portfolio_val = portfolio_val.dropna()
 
         return portfolio_val
     
     def portfolio_returns(self):
         port_val = self.portfolio_value()
         percentage_chg = port_val.pct_change()
-        percentage_chg = percentage_chg.dropna()
+        
         percentage_chg = percentage_chg.replace([float('inf'), float('-inf')], float('nan'))
+        percentage_chg = percentage_chg.dropna()
         return percentage_chg
