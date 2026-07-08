@@ -41,11 +41,39 @@ class PerformanceCalculator():
         max_dd = (self.portfolio_value - cum_max) / cum_max
         return max_dd.min()
 
-
+    def _calculate_window_return(self, start_date, end_date ):
+        growth_factors = self.portfolio_returns.loc[start_date:end_date] + 1
+        total_return = growth_factors.prod() - 1 
+        return total_return
         
 
 
         
+    def get_tearsheet_returns(self):
+        anchor = self.portfolio_returns.index.max()
+        inception_date = self.portfolio_returns.index.min()
+
+        target_days = {"1M":1, "3M":3, "6M":6, "1Y":12, "5Y": 60}
+
+        target_days_returns = dict()
+        for label, days in target_days.items(): 
+            target_start = anchor - pd.DateOffset(months=days)
+            
+            
+            if target_start < inception_date:
+                    target_start = inception_date
+
+            port_ret = self._calculate_window_return(start_date=target_start, end_date = anchor)
+            target_days_returns[label] = port_ret
+
+        return target_days_returns
+
+    
+            
+
+
+        
+
 
 
 

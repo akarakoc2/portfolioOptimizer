@@ -35,3 +35,5 @@ if __name__ == "__main__":
 
 
     print(c.max_drawdown())
+    
+    print(c.get_tearsheet_returns())
