@@ -5,6 +5,7 @@ class PerformanceCalculator():
         
         self.portfolio_value = portfolio_value
         self.portfolio_returns = portfolio_returns
+        self.risk_free = risk_free
         
         self.trading_days = 252
 
@@ -23,7 +24,31 @@ class PerformanceCalculator():
 
         return ann_return
 
+    def volatility(self):
+
+        vol_daily = self.portfolio_returns.std()
+        vol_ann = vol_daily * (self.trading_days ** 0.5)
+        return vol_ann
+
+    def sharpe_ratio(self):
+
+        shp_ret = (self.annualized_return() - self.risk_free) / self.volatility()
+
+        return shp_ret
     
+    def max_drawdown(self):
+        cum_max = self.portfolio_value.cummax()
+        max_dd = (self.portfolio_value - cum_max) / cum_max
+        return max_dd.min()
+
+
+        
+
+
+        
+
+
+
 
 
 
