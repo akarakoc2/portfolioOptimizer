@@ -119,3 +119,16 @@ class PortfolioTimeSeries():
         percentage_chg = percentage_chg.replace([float('inf'), float('-inf')], float('nan'))
         percentage_chg = percentage_chg.dropna()
         return percentage_chg
+    
+
+    @property
+    def cashflow_dates(self):
+        dates = []
+        for position in self.portfolio.positions.values():
+            for transaction in position.transactions:
+                date = transaction.transaction_date
+                dates.append(pd.Timestamp(date))
+
+
+        return sorted(list(set(dates)))
+
