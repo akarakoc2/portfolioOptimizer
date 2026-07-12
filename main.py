@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     twr_calc = TWRcalculator(a,cashflow_dates=cash_flow_dates)
     print(100* "=")
-    print(twr_calc._get_subperiod_boundries())
+    print(twr_calc.calculate_twr())
 
 
 
