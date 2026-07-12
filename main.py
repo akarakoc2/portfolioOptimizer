@@ -5,6 +5,9 @@ from data.market_data import MarketDataFetcher
 from analytics.timeseries import PortfolioTimeSeries
 from analytics.performance import PerformanceCalculator
 from analytics.twr import TWRcalculator
+from analytics.mwr import MWRCalculator
+from datetime import datetime
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -51,6 +54,15 @@ if __name__ == "__main__":
     print(100* "=")
     print(twr_calc.calculate_twr())
 
+    print(100* "=")
+
+    cash_flow_mwr = time_s.mwr_cashflows
+    today_port_worth = time_s.portfolio_value().iloc[-1]
+    inception_date = pd.Timestamp(port1.creation_date)
+
+    mwr_calc = MWRCalculator(cashflows=cash_flow_mwr,current_value=today_port_worth,inception_date=inception_date )
+    print(100* "=")
+    print(mwr_calc.calculate_mwr())
 
 
 

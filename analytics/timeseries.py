@@ -132,3 +132,25 @@ class PortfolioTimeSeries():
 
         return sorted(list(set(dates)))
 
+    @property
+    def mwr_cashflows(self):
+        cashflows = list()
+
+        for position in self.portfolio.positions.values():
+            for transaction in position.transactions:
+                date =  pd.Timestamp(transaction.transaction_date)
+
+                if transaction.transaction_type == "BUY":
+                    amount = - transaction.total_cost
+ 
+                elif transaction.transaction_type == "SELL":
+                    amount = + transaction.total_cost
+                else:
+                    raise NameError("Please indicate a correct transaction type such ass BUY, SELL")
+
+                cashflows.append((date, amount))
+                
+
+        cashflows = sorted(cashflows, key=lambda x: x[0])
+        return cashflows
+    
