@@ -15,6 +15,8 @@ if __name__ == "__main__":
     # 1. Create your transactions
     transaction1 = Transaction('aapl', '2024-01-01','BUY', 1, 120, 2,'USD')
     transaction2 = Transaction('msft', '2024-06-01','BUY', 1, 120, 2,'USD')
+    transaction3 = Transaction('crwv', '2026-03-01','BUY', 1, 120, 2,'USD')
+    transaction4 = Transaction('oust', '2025-03-01','BUY', 1, 20, 2,'USD')
 
     # 2. Create your portfolio
     port1 = Portfolio("ATK_1", "USD", creation_date = '2024-01-01')
@@ -23,6 +25,7 @@ if __name__ == "__main__":
     # Your Portfolio class will automatically group them into an 'aapl' Position!
     port1.add_transaction(transaction1)
     port1.add_transaction(transaction2)
+    port1.add_transaction(transaction3)
     
     # 4. Run your timeseries
     fetcher = MarketDataFetcher()
@@ -43,12 +46,11 @@ if __name__ == "__main__":
 
     print(c.max_drawdown())
     
-    print(c.get_tearsheet_returns())
+  
 
     print(100* "=")
 
     cash_flow_dates = time_s.cashflow_dates
-    print(cash_flow_dates)
 
     twr_calc = TWRcalculator(a,cashflow_dates=cash_flow_dates)
     print(100* "=")

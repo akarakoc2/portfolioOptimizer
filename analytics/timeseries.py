@@ -52,50 +52,30 @@ class PortfolioTimeSeries():
         df= df.fillna(0)
         return df
     
-
     def build_price_frames(self):
+
         prices = dict()
+        ticker_starts = self.ticker_start_dates
 
-        
-        # Fetch the data
-        df = self.fetcher.fetch_multiple(self.tickers, self.start_date, self.end_date)
-        
-        for ticker in df.keys():
-            # Defensive checks from our previous fix
-            if df[ticker] is None or df[ticker].empty:
-                print(f"WARNING: Data for {ticker} is missing or empty. Skipping...")
-                continue 
-            
-            if "Close" not in df[ticker]:
-                print(f"WARNING: 'Close' column missing for {ticker}. Skipping...")
+        for ticker in self.tickers:
+            ticker_start = ticker_starts[ticker]
+            data = self.fetcher.get_historical_prices(
+                ticker=ticker,
+                start_date=ticker_start,
+                end_date=self.end_date
+            )
+            if data is None or data.empty:
+                print(f"Warning: No data for {ticker}")
                 continue
-
-            # Extract the Close column data
-            close_column = df[ticker]["Close"]
-            
-            
-            if isinstance(close_column, pd.DataFrame):
-                close_column = close_column.squeeze()
-
-            prices[ticker] = close_column
-
-        prices_df = pd.DataFrame(prices)
-        
-        if prices_df.empty:
-            raise ValueError("No valid price data was returned for any tickers in the portfolio.")
-
+            prices[ticker] = data["Close"].squeeze()
+                                                  
+        prices_df = pd.DataFrame(prices)            
         prices_df.index = prices_df.index.tz_localize(None)
-        prices_df = prices_df[~prices_df.index.duplicated(keep='last')]
         prices_df = prices_df.reindex(self.trading_days)
-        
-        if prices_df.empty:
-            raise ValueError("Data reindexing problem has occurred please check the reindexing")
-            
         prices_df = prices_df.ffill()
         prices_df = prices_df.fillna(0)
-        
-
         return prices_df
+
 
 
     def build_value_frame(self):
@@ -154,3 +134,12 @@ class PortfolioTimeSeries():
         cashflows = sorted(cashflows, key=lambda x: x[0])
         return cashflows
     
+    @property
+    def ticker_start_dates(self):
+        start_dates = {}
+        
+        for ticker, position in self.portfolio.positions.items():
+            first_transaction = position.transactions[0]
+            start_dates[ticker] = pd.Timestamp(first_transaction.transaction_date)
+        
+        return start_dates
