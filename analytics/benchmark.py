@@ -28,9 +28,37 @@ class BenchmarkComperator():
         return corr_matrix.iloc[0,1]
 
     
+    def calculate_alpha(self):
+
+        y = self.port_ret - self.rf
+
+        x_raw = self.bench_ret - self.rf
+
+        X = np.vstack([x_raw, np.ones(len(x_raw))]).T
+
+        results = np.linalg.lstsq(X, y, rcond=False)
+
+        coefficients = results[0]
+        beta = coefficients[0]
+        alpha_daily = coefficients[1]
+        alpha_annual = alpha_daily * 252
+
+        return alpha_annual
 
 
+    def calculate_tracking_error(self):
 
+        #tracking error is sdev of active returns.
+
+        active_return = self.port_ret - self.bench_ret # daily active returns here.
+
+        track_error = active_return.rolling(window=252, min_periods= 21).std()
+
+        annualized_te = track_error * np.sqrt(self.trading_days)
+
+
+        return annualized_te
+    
 
 
         
