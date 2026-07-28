@@ -20,7 +20,8 @@ class PortfolioSummary():
         self.portfolio_returns = self.ts.portfolio_returns()
         self.perf = PerformanceCalculator(self.portfolio_value, self.portfolio_returns)
         self.mwr = MWRCalculator(self.ts.mwr_cashflows, current_value=self.portfolio_value.iloc[-1], inception_date= pd.Timestamp(self.port_inception ))
-        self.twr = TWRcalculator(self.portfolio_value, self.twr_dates)
+        self.port_positions = self.portfolio.open_positions()
+        self.twr = TWRcalculator(self.portfolio_value, self.port_positions)
 
         benchmark_data = self.fetcher.get_historical_prices(ticker=self.benchmark_ticker,start_date=self.portfolio_value.index.min(),end_date=self.portfolio_value.index.max())
         self.bnch_return = benchmark_data["Close"].squeeze().pct_change().dropna()
@@ -32,6 +33,11 @@ class PortfolioSummary():
             "identity": self._get_identity(),
             "value_summary": self._get_value_summary(),
             "performance_metrics": self._get_performance_metrics(),
+            "period_returns": self._get_period_returns(),
+            "timeseries": self._get_timeseries(),
+            "transactions": self._get_transactions(),
+            "positions": self._get_positions(),
+            "benchmark": self._get_benchmark()
         }
 
 
@@ -133,7 +139,8 @@ class PortfolioSummary():
                 "current_value": current_value,
                 "unrealized_pnl": unrealized_pnl,
                 "weight": current_value / self.portfolio_value.iloc[-1],
-                "is_open": pos.is_open
+                "is_open": pos.is_open,
+                "unrealized_pnl_pct": unrealized_pnl / (pos.average_cost_basis * pos.net_quantity)
             }
             )
 

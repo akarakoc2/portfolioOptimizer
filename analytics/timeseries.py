@@ -8,7 +8,7 @@ class PortfolioTimeSeries():
     def __init__(self, portfolio, fetcher, start_date = None, end_date = None):
         self.portfolio = portfolio
         if start_date is None:
-            self.start_date = self.portfolio.creation_date
+            self.start_date = self._first_transaction_date
         else:
             self.start_date = start_date
         if end_date is None:
@@ -77,7 +77,6 @@ class PortfolioTimeSeries():
         return prices_df
 
 
-
     def build_value_frame(self):
         holding_frames = self.build_holding_frames()
         build_prices = self.build_price_frames()
@@ -88,7 +87,8 @@ class PortfolioTimeSeries():
     def portfolio_value(self):
 
         portfolio_val = self.build_value_frame().sum(axis=1)
-        portfolio_val = portfolio_val.dropna()
+        portfolio_val = portfolio_val[portfolio_val > 0]
+        portfolio_val = portfolio_val
 
         return portfolio_val
     
@@ -143,3 +143,12 @@ class PortfolioTimeSeries():
             start_dates[ticker] = pd.Timestamp(first_transaction.transaction_date)
         
         return start_dates
+
+    @property
+    def _first_transaction_date(self):
+        all_dates = []
+        for position in self.portfolio.positions.values():
+            first_date = pd.Timestamp(position.transactions[0].transaction_date)
+            all_dates.append(first_date)
+        return min(all_dates)
+

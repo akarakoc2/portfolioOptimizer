@@ -16,6 +16,7 @@ if __name__ == "__main__":
     transaction1 = Transaction('aapl', '2024-01-02','BUY', 5, 185, 2,'USD')
     transaction2 = Transaction('msft', '2024-03-01','BUY', 3, 415, 2,'USD')
     transaction3 = Transaction('aapl', '2026-06-01','BUY', 1, 195, 2,'USD')
+    transaction4 = Transaction('amzn', '2026-03-01','BUY', 1, 120, 2,'USD')
    
     # 2. Create your portfolio
     port1 = Portfolio("ATK_1", "USD", creation_date = '2024-01-01')
@@ -25,10 +26,10 @@ if __name__ == "__main__":
     port1.add_transaction(transaction1)
     port1.add_transaction(transaction2)
     port1.add_transaction(transaction3)
-    
+        
     # 4. Run your timeseries
     fetcher = MarketDataFetcher()
-    time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date="2024-01-01")
+    time_s = PortfolioTimeSeries(port1, fetcher=fetcher, start_date=None)
     
     portfolio_val = time_s.portfolio_value()
     portfolio_ret = time_s.portfolio_returns()
@@ -49,7 +50,8 @@ if __name__ == "__main__":
 
    
     print(100* "=")
-    twr_calc = TWRcalculator(portfolio_val, cashflow_dates=cash_flow_dates)
+    port_positions = port1.open_positions()
+    twr_calc = TWRcalculator(portfolio_val, port_positions)
     print("Time weighted return: ",twr_calc.calculate_twr())
     print(100* "=")
 
@@ -61,9 +63,6 @@ if __name__ == "__main__":
     mwr_calc = MWRCalculator(cashflows=cash_flow_mwr,current_value=today_port_worth,inception_date=inception_date )
     print("Money weighted return: ", mwr_calc.calculate_mwr())
     print(100* "=")
-
-    print(port1.positions)
-
 
 
     ps = PortfolioSummary(portfolio=port1,fetcher=fetcher, benchmark_ticker="SPY")
