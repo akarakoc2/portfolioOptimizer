@@ -8,7 +8,7 @@ from analytics.twr import TWRcalculator
 from analytics.mwr import MWRCalculator
 from datetime import datetime
 import pandas as pd
-
+from reporting.summary import PortfolioSummary
 
 if __name__ == "__main__":
 
@@ -62,11 +62,15 @@ if __name__ == "__main__":
     print("Money weighted return: ", mwr_calc.calculate_mwr())
     print(100* "=")
 
+    print(port1.positions)
 
 
 
+    ps = PortfolioSummary(portfolio=port1,fetcher=fetcher, benchmark_ticker="SPY")
+    summary = ps.get_summary(),
 
-    
+    print(summary)
+
 
 
 
