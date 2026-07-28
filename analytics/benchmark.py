@@ -1,8 +1,9 @@
 import pandas as pd 
 import numpy as np
+from data.market_data import MarketDataFetcher
 
 class BenchmarkComperator():
-    def __init__(self, portfolio_returns: pd.Series, benchmark_returns: pd.Series, risk_free = 0):
+    def __init__(self, portfolio_returns: pd.Series, benchmark_returns: pd.Series, risk_free = 0, mf = None):
 
         aligned = pd.concat([portfolio_returns, benchmark_returns], axis=1, join='inner').dropna()
         self.port_ret = aligned.iloc[:, 0]
@@ -10,6 +11,7 @@ class BenchmarkComperator():
         self.rf = risk_free
         self.trading_days = 252
         self.combined = aligned
+        self.mf = mf if mf is not None else MarketDataFetcher()
 
     
     def calculate_beta(self):
@@ -58,7 +60,34 @@ class BenchmarkComperator():
 
 
         return annualized_te
-    
+
+
+    def calculate_overall_ir(self):
+        # 1. Get the single overall alpha (inception to date)
+        alpha_ann = self.calculate_alpha()
+        
+        # 2. Get the single overall tracking error (inception to date)
+        active_return = self.port_ret - self.bench_ret
+        te_ann = active_return.std() * np.sqrt(self.trading_days)
+        
+        # 3. Calculate IR
+        return alpha_ann / te_ann
+        
+
+    def get_benchmark_returns(self, benchmark_ticker: str):
+
+        start_date = self.port_ret.index.min() 
+        end_date = self.port_ret.index.max()
+
+        df_benchmark = self.mf.get_historical_prices(ticker= benchmark_ticker,
+                                                 start_date=start_date,
+                                                 end_date = end_date
+                                                 )
+        df_benchmark = df_benchmark["Close"]
+        df_benchmark_returns = df_benchmark.pct_change()
+
+        return df_benchmark_returns
+        
 
 
         
