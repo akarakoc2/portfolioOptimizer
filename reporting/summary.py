@@ -5,12 +5,14 @@ import datetime
 from analytics.mwr import MWRCalculator
 from analytics.twr import TWRcalculator
 import pandas as pd
+from analytics.benchmark import BenchmarkComperator
 
 class PortfolioSummary():
-    def __init__(self, portfolio: Portfolio, fetcher, benchmark_ticker = "SPY"):
+    def __init__(self, portfolio: Portfolio, fetcher, benchmark_ticker = "SPY", risk_free = 0):
         self.portfolio = portfolio
         self.fetcher = fetcher
         self.benchmark_ticker = benchmark_ticker
+        self.rf = risk_free
         self.port_inception = self.portfolio.creation_date
         self.ts = PortfolioTimeSeries(portfolio= portfolio, fetcher=fetcher)
         self.twr_dates = self.ts.cashflow_dates
@@ -19,6 +21,11 @@ class PortfolioSummary():
         self.perf = PerformanceCalculator(self.portfolio_value, self.portfolio_returns)
         self.mwr = MWRCalculator(self.ts.mwr_cashflows, current_value=self.portfolio_value.iloc[-1], inception_date= pd.Timestamp(self.port_inception ))
         self.twr = TWRcalculator(self.portfolio_value, self.twr_dates)
+
+        benchmark_data = self.fetcher.get_historical_prices(ticker=self.benchmark_ticker,start_date=self.portfolio_value.index.min(),end_date=self.portfolio_value.index.max())
+        self.bnch_return = benchmark_data["Close"].squeeze().pct_change().dropna()
+
+        self.bnch = BenchmarkComperator(portfolio_returns=self.portfolio_returns, benchmark_returns=self.bnch_return, risk_free=self.rf, mf=self.fetcher)
 
     def get_summary(self):
         return {
@@ -72,12 +79,81 @@ class PortfolioSummary():
         }
         return performance_metrics
 
-
     def _get_period_returns(self):
         period_returns = self.perf.get_tearsheet_returns()
+        period_returns["Inception"] = self.perf.total_return()
+        return period_returns
+
+
 
         
 
+    def _get_timeseries(self, base_value = 100):
+        return {
+            "portfolio_value": self.portfolio_value,
+            "portfolio_returns": self.portfolio_returns,
+            "growth_of_1usd": (1 + self.portfolio_returns).cumprod() * base_value
+        }
+
+
+    def _get_transactions(self):
+        transactions = []
         
+        for position in self.portfolio.all_positions():
+            for transaction in position.transactions:
+                transactions.append({
+                    "date": transaction.transaction_date,
+                    "ticker": transaction.ticker,
+                    "type": transaction.transaction_type,
+                    "quantity": transaction.quantity,
+                    "price": transaction.cost_per_unit,
+                    "fees": transaction.fees,
+                    "total_cost": transaction.total_cost,
+                    "currency": transaction.currency
+                })
+        
+        transactions = sorted(transactions, key=lambda x: x["date"])
+        return transactions
+
+
+    def _get_positions(self):
+        positions = []
+
+
+        for pos in self.portfolio.open_positions():
+            current_price = self.fetcher.fetch_current_price(pos.ticker)
+            current_value = current_price * pos.net_quantity
+            unrealized_pnl = current_value - (pos.average_cost_basis * pos.net_quantity)
+
+            positions.append({
+                "ticker" : pos.ticker,
+                "quantity": pos.net_quantity,
+                "avg_cost": pos.average_cost_basis,
+                "current price": current_price,
+                "current_value": current_value,
+                "unrealized_pnl": unrealized_pnl,
+                "weight": current_value / self.portfolio_value.iloc[-1],
+                "is_open": pos.is_open
+            }
+            )
+
+        return positions
+
+
+    def _get_benchmark(self):
+        return {
+        "benchmark_ticker": self.benchmark_ticker,
+        "benchmark_return": (1 + self.bnch_return).prod() - 1,
+        "alpha": self.bnch.calculate_alpha(),
+        "beta": self.bnch.calculate_beta(),
+        "correlation": self.bnch.calculate_correlation(),
+        "tracking_error": self.bnch.calculate_tracking_error().iloc[-1],
+        "information_ratio": self.bnch.calculate_overall_ir(),
+        "outperformance": self.perf.total_return() - ((1 + self.bnch_return).prod() - 1),
+        "benchmark_value_series": self.bnch_return,
+        "growth_of_1usd_benchmark": ((self.bnch_return) + 1).cumprod() * 100
+    }
+
 
         
+
