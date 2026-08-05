@@ -1,6 +1,6 @@
-from domain.position import Position
+from .position import Position
 from datetime import date
-from domain.transaction import Transaction
+from .transaction import Transaction
 
 class Portfolio():
     def __init__(self, portfolio_name, portfolio_currency, creation_date = None):
