@@ -120,15 +120,7 @@ class PortfolioTimeSeries():
             for transaction in position.transactions:
                 date =  pd.Timestamp(transaction.transaction_date)
 
-                if transaction.transaction_type == "BUY":
-                    amount = - transaction.total_cost
- 
-                elif transaction.transaction_type == "SELL":
-                    amount = + transaction.total_cost
-                else:
-                    raise NameError("Please indicate a correct transaction type such ass BUY, SELL")
-
-                cashflows.append((date, amount))
+                cashflows.append((date, transaction.cash_flow))
                 
 
         cashflows = sorted(cashflows, key=lambda x: x[0])

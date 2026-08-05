@@ -37,7 +37,13 @@ class Transaction:
         if self.transaction_type == "BUY":
             self.total_cost = (self.cost_per_unit  * self.quantity) + self.fees
         elif self.transaction_type == "SELL":
-            self.total_cost = - (self.cost_per_unit * self.quantity) - self.fees 
+            self.total_cost = (self.cost_per_unit * self.quantity) - self.fees 
+
+    @property
+    def cash_flow(self):
+        return -self.total_cost if self.transaction_type == "BUY" else self.total_cost
+        
+
 
     def __repr__(self):
         return f"Transaction | {self.ticker} | {self.transaction_type} | Price: {self.cost_per_unit} | Total: {self.total_cost} | {self.currency} | {self.transaction_date}"
