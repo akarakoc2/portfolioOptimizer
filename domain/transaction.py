@@ -34,15 +34,24 @@ class Transaction:
         self.currency = currency
 
 
+        # Gross cash consideration, always positive. Fees are a cost in both
+        # directions: they add to what a BUY costs and subtract from what a SELL
+        # nets. Only the price leg changes sign, which is why the sign lives in
+        # cash_flow rather than here.
         if self.transaction_type == "BUY":
             self.total_cost = (self.cost_per_unit  * self.quantity) + self.fees
         elif self.transaction_type == "SELL":
-            self.total_cost = (self.cost_per_unit * self.quantity) - self.fees 
+            self.total_cost = (self.cost_per_unit * self.quantity) - self.fees
 
     @property
     def cash_flow(self):
+        """Signed cash impact on the holder: negative on BUY, positive on SELL.
+
+        Fee-inclusive, so this is the number an IRR wants. TWR needs a different
+        quantity, because a fee never enters the holdings -- see analytics/twr.py.
+        """
         return -self.total_cost if self.transaction_type == "BUY" else self.total_cost
-        
+
 
 
     def __repr__(self):
