@@ -18,10 +18,15 @@ class PortfolioSummary():
         self.twr_dates = self.ts.cashflow_dates
         self.portfolio_value = self.ts.portfolio_value()
         self.portfolio_returns = self.ts.portfolio_returns()
-        self.perf = PerformanceCalculator(self.portfolio_value, self.portfolio_returns)
-        self.mwr = MWRCalculator(self.ts.mwr_cashflows, current_value=self.portfolio_value.iloc[-1], inception_date= pd.Timestamp(self.port_inception ))
+        self.perf = PerformanceCalculator(self.portfolio_value, self.portfolio_returns, risk_free=risk_free)
+        self.mwr = MWRCalculator(
+            self.ts.external_cashflows,
+            current_value=self.portfolio_value.iloc[-1],
+            inception_date=pd.Timestamp(self.port_inception),
+            terminal_date=self.portfolio_value.index[-1],
+        )
         self.port_positions = self.portfolio.open_positions()
-        self.twr = TWRcalculator(self.portfolio_value, self.port_positions)
+        self.twr = TWRcalculator(self.portfolio_returns)
 
         benchmark_data = self.fetcher.get_historical_prices(ticker=self.benchmark_ticker,start_date=self.portfolio_value.index.min(),end_date=self.portfolio_value.index.max())
         self.bnch_return = benchmark_data["Close"].squeeze().pct_change().dropna()
@@ -54,15 +59,14 @@ class PortfolioSummary():
 
     def _get_value_summary(self):
 
-        # calculate total invested
-        total_invested = 0
-        for position in self.portfolio.all_positions():
-            position_cost = position.net_quantity * position.average_cost_basis
-            total_invested += position_cost
+        # Net cash you actually put in, not the book value of what you still
+        # hold. The old sum of net_quantity * average_cost_basis ignored fees
+        # and silently wrote off every realised gain on a sold position.
+        total_invested = -sum(amount for _, amount in self.ts.external_cashflows)
 
         current_value = self.portfolio_value.iloc[-1]
         total_profit = current_value - total_invested
-        
+
         value_dict = { "Current Value": current_value,
                        "Total Invested":total_invested,
                        "Total Profit":total_profit,
@@ -125,22 +129,28 @@ class PortfolioSummary():
     def _get_positions(self):
         positions = []
 
+        # Mark against the same valuation the rest of the report uses. Calling
+        # fetch_current_price here dated the numerator to today while the
+        # denominator was the last close, so weights never summed to 1.
+        last_prices = self.ts.build_price_frames().iloc[-1]
+        total_value = self.portfolio_value.iloc[-1]
 
         for pos in self.portfolio.open_positions():
-            current_price = self.fetcher.fetch_current_price(pos.ticker)
+            current_price = last_prices[pos.ticker]
             current_value = current_price * pos.net_quantity
-            unrealized_pnl = current_value - (pos.average_cost_basis * pos.net_quantity)
+            cost_basis = pos.average_cost_basis * pos.net_quantity
+            unrealized_pnl = current_value - cost_basis
 
             positions.append({
                 "ticker" : pos.ticker,
                 "quantity": pos.net_quantity,
                 "avg_cost": pos.average_cost_basis,
-                "current price": current_price,
+                "current_price": current_price,
                 "current_value": current_value,
                 "unrealized_pnl": unrealized_pnl,
-                "weight": current_value / self.portfolio_value.iloc[-1],
+                "weight": current_value / total_value if total_value else float('nan'),
                 "is_open": pos.is_open,
-                "unrealized_pnl_pct": unrealized_pnl / (pos.average_cost_basis * pos.net_quantity)
+                "unrealized_pnl_pct": unrealized_pnl / cost_basis if cost_basis else float('nan')
             }
             )
 
