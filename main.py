@@ -50,23 +50,24 @@ if __name__ == "__main__":
 
    
     print(100* "=")
-    port_positions = port1.open_positions()
-    twr_calc = TWRcalculator(portfolio_val, port_positions)
+    twr_calc = TWRcalculator(portfolio_ret)
     print("Time weighted return: ",twr_calc.calculate_twr())
+    print("Annualized TWR:       ",twr_calc.annualized_twr())
     print(100* "=")
 
-    cash_flow_mwr = time_s.mwr_cashflows
-    today_port_worth = time_s.portfolio_value().iloc[-1]
+    cash_flow_mwr = time_s.external_cashflows
+    today_port_worth = portfolio_val.iloc[-1]
     inception_date = pd.Timestamp(port1.creation_date)
     # ── 5. MONEY WEIGHTED RETURN ─────────────────────
     print(100* "=")
-    mwr_calc = MWRCalculator(cashflows=cash_flow_mwr,current_value=today_port_worth,inception_date=inception_date )
+    mwr_calc = MWRCalculator(cashflows=cash_flow_mwr,current_value=today_port_worth,inception_date=inception_date,
+                             terminal_date=portfolio_val.index[-1])
     print("Money weighted return: ", mwr_calc.calculate_mwr())
     print(100* "=")
 
 
     ps = PortfolioSummary(portfolio=port1,fetcher=fetcher, benchmark_ticker="SPY")
-    summary = ps.get_summary(),
+    summary = ps.get_summary()
 
     print(summary)
 
