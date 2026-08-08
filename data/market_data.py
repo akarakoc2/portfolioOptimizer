@@ -1,118 +1,228 @@
+import hashlib
 import os
+import re
+
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
+# Anchor the cache to the package, not the working directory. The old relative
+# default produced a separate cache under every directory the code was run
+# from -- hence cache/, analytics/cache/ and notebooks/cache/ all existing.
+_PACKAGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+_SAFE_TICKER = re.compile(r"[^A-Z0-9.\-]")
+
+
 class MarketDataFetcher():
-    def __init__(self, cache_directory = os.path.join("cache"), cache_expiry_days = 1):
+    """Price fetcher with a two-level cache (memory, then parquet on disk).
+
+    The cache is merge-only: a request for a narrow window never replaces a
+    wider cached history. That mattered less in a script and matters a great
+    deal in a UI, where every widget change re-runs the pipeline.
+    """
+
+    # Pinned rather than left to the library default, which changed in
+    # yfinance 0.2.51 and silently moved every historical number with it.
+    # True means prices are split- and dividend-adjusted, which is a different
+    # basis from the raw prices recorded on transactions -- see the note in
+    # get_historical_prices.
+    AUTO_ADJUST = True
+
+    def __init__(self, cache_directory = None, cache_expiry_days = 1):
+        if cache_directory is None:
+            cache_directory = os.path.join(_PACKAGE_ROOT, "cache")
+
         self.memory_cache = dict()
-        self.cache_directory = cache_directory
+        self.cache_directory = os.path.abspath(cache_directory)
         self.cache_expiry_days = cache_expiry_days
 
-        #directly checking if the cache exist if not the directory will be created automatically. 
         os.makedirs(self.cache_directory, exist_ok = True)
 
+    # ── cache addressing ──────────────────────────────────────────────
 
-    #this fetching helper function to enable correct data ask from the yfinance, asking only data we miss
-    def _fetch_missing_data(self, ticker, cached_data, start_date, end_date):
-            #filepath handling for the L2 cache & also timestamp
-            
-            file_path = os.path.join(self.cache_directory, ticker + ".parquet")
-            start_date = pd.Timestamp(start_date)
-            end_date = pd.Timestamp(end_date)
+    @staticmethod
+    def _cache_key(ticker):
+        """Normalise a ticker into a stable, case-insensitive cache key."""
+        if ticker is None:
+            raise ValueError("Ticker must not be None.")
 
-            
-            if start_date < cached_data.index.min():
-                business_days = pd.bdate_range(start=start_date, end= cached_data.index.min()) #this gives us the business days
-                if len(business_days) > 3: #business day check if we have enough to ask from yfinance
-                    df_1 = yf.download(ticker, start = start_date, end = cached_data.index.min())
-                    cached_data = pd.concat([df_1,cached_data])
-                    cached_data =cached_data.sort_index().drop_duplicates()
+        key = str(ticker).strip().upper()
+        if not key:
+            raise ValueError("Ticker must not be empty.")
 
-            if end_date > cached_data.index.max():
-                business_days = pd.bdate_range(start=cached_data.index.max(), end= end_date)
-                if len(business_days) > 3:
-                    df_1 = yf.download(ticker, start = cached_data.index.max(), end = end_date)
-                    cached_data = pd.concat([cached_data, df_1])
-                    cached_data = cached_data.sort_index().drop_duplicates()
-   
-            self.memory_cache[ticker] = cached_data
-            cached_data.to_parquet(file_path)
+        return key
 
-            return cached_data[start_date:end_date]
+    def _cache_path(self, key):
+        """Filesystem path for a cache key, guaranteed to stay inside the cache.
+
+        The ticker used to be concatenated straight into the filename, so a
+        ticker of '../../x' wrote outside the cache directory entirely. It also
+        made the cache case-sensitive, which is why aapl.parquet and
+        AAPL.parquet both existed.
+        """
+        safe = _SAFE_TICKER.sub("_", key)
+
+        # Keep ordinary tickers readable; disambiguate anything we had to
+        # rewrite so '^GSPC' and '_GSPC' cannot collide on one file.
+        if safe != key or set(safe) <= {"."}:
+            digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:8]
+            safe = f"{safe}-{digest}"
+
+        path = os.path.abspath(os.path.join(self.cache_directory, safe + ".parquet"))
+
+        if os.path.commonpath([path, self.cache_directory]) != self.cache_directory:
+            raise ValueError(f"Refusing to write outside the cache directory for {key!r}.")
+
+        return path
+
+    # ── frame hygiene ─────────────────────────────────────────────────
+
+    @staticmethod
+    def _normalize_index(df):
+        """Datetime index, tz-naive, so comparisons never raise."""
+        df = df.copy()
+        df.index = pd.DatetimeIndex(df.index)
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+        return df
+
+    @staticmethod
+    def _dedupe(df):
+        """Drop duplicate *dates*, keeping the most recently fetched row.
+
+        drop_duplicates() compared whole rows, which deleted genuinely distinct
+        trading days that happened to share an OHLCV and left the duplicate
+        index labels from an overlapping refetch in place -- those then blew up
+        the next reindex.
+        """
+        if df.index.has_duplicates:
+            df = df[~df.index.duplicated(keep = "last")]
+        return df.sort_index()
+
+    def _merge(self, cached, fresh):
+        if cached is None or cached.empty:
+            return fresh
+        if fresh is None or fresh.empty:
+            return cached
+        return self._dedupe(pd.concat([cached, fresh]))
+
+    # ── cache i/o ─────────────────────────────────────────────────────
+
+    def _is_stale(self, key):
+        # An expiry of zero means "never trust the cached tail". Handled up
+        # front because comparing a just-written file's age against zero is
+        # decided by filesystem timestamp granularity, which can report the
+        # mtime a hair ahead of now() and make the answer nondeterministic.
+        if self.cache_expiry_days <= 0:
+            return True
+
+        path = self._cache_path(key)
+        if not os.path.exists(path):
+            return True
+
+        age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(path))
+        return age >= timedelta(days = self.cache_expiry_days)
+
+    def _load(self, key):
+        if key in self.memory_cache:
+            return self.memory_cache[key]
+
+        path = self._cache_path(key)
+        if not os.path.exists(path):
+            return None
+
+        try:
+            cached = pd.read_parquet(path)
+        except Exception as exc:
+            print(f"Warning: cache for {key} is unreadable ({exc}). Refetching.")
+            return None
+
+        if cached.empty:
+            return None
+
+        cached = self._dedupe(self._normalize_index(cached))
+        self.memory_cache[key] = cached
+        return cached
+
+    def _store(self, key, df):
+        """Persist a frame. Empty frames are never written."""
+        if df is None or df.empty:
+            return df
+
+        df = self._dedupe(self._normalize_index(df))
+        self.memory_cache[key] = df
+        df.to_parquet(self._cache_path(key))
+        return df
+
+    def _download(self, ticker, start_date, end_date):
+        # yfinance treats `end` as exclusive, so asking for [start, end] without
+        # the extra day silently omits the last bar.
+        data = yf.download(
+            ticker,
+            start = pd.Timestamp(start_date),
+            end = pd.Timestamp(end_date) + pd.Timedelta(days = 1),
+            auto_adjust = self.AUTO_ADJUST,
+            progress = False,
+        )
+
+        if data is None or data.empty:
+            return pd.DataFrame()
+
+        return self._normalize_index(data)
+
+    # ── public api ────────────────────────────────────────────────────
 
     def get_historical_prices(self, ticker, start_date, end_date):
+        """Closing prices for [start_date, end_date], served from cache where possible.
 
-
-        #file path and timestamp for the entries here
-        file_path = os.path.join(self.cache_directory, ticker + ".parquet")
+        Note the price basis: with AUTO_ADJUST the series is back-adjusted for
+        dividends and splits, while transactions record the raw price paid. The
+        two disagree on trade dates. Fixing that means moving to raw prices and
+        crediting dividends to cash, which is a separate change.
+        """
+        key = self._cache_key(ticker)
         start_date = pd.Timestamp(start_date)
         end_date = pd.Timestamp(end_date)
 
-        #helper function for the data handling over cache
+        cached = self._load(key)
 
-        #here the 1st layer of the memory cache
-        if ticker in self.memory_cache:
-            dat1 = self.memory_cache[ticker]
-            if dat1.index.min() <= start_date and dat1.index.max() >= end_date:
-                return dat1[start_date:end_date]
-            else:
-                return self._fetch_missing_data(ticker, dat1, start_date, end_date) 
-            
-        #L2 layer of the cache 
-        elif os.path.exists(file_path):
-            #we have to translate the time to normal date because when we read it gives with seconds since 1970
-            last_save = os.path.getmtime(file_path)
-            last_save = datetime.fromtimestamp(last_save)
-            today = datetime.now()
-            diff = today - last_save
-            
-            if diff < timedelta(self.cache_expiry_days):
+        if cached is None:
+            fresh = self._download(ticker, start_date, end_date)
+            if fresh.empty:
+                return fresh
+            return self._store(key, fresh).loc[start_date:end_date]
 
-                #here we must take care of the parquet file if it is empty or not or our code might
-                #break here, if we do not get a data from yfinance it will directly save the empty df
-                cache_data = pd.read_parquet(file_path)
+        # Reach further back if asked for history we do not hold.
+        if start_date < cached.index.min():
+            fresh = self._download(ticker, start_date, cached.index.min())
+            cached = self._store(key, self._merge(cached, fresh))
 
-                if cache_data.empty:
-                    print(f"Warning: Cached file for {ticker} is empty. Fetching fresh data...")
-                    dat = yf.download(ticker, start=start_date, end=end_date)
-                    self.memory_cache[ticker] = dat
-                    dat.to_parquet(file_path)
-                    return dat
-                    
+        # Extend the tail only once the cache has expired. Coverage governs the
+        # head, freshness governs the tail -- previously a heuristic skipped any
+        # gap of three business days or fewer and returned stale prices as
+        # though they were current.
+        if end_date > cached.index.max() and self._is_stale(key):
+            fresh = self._download(ticker, cached.index.max(), end_date)
+            cached = self._store(key, self._merge(cached, fresh))
 
-                self.memory_cache[ticker] = cache_data
-                if cache_data.index.min() <= start_date and cache_data.index.max() >= end_date:
-                    return cache_data[start_date:end_date]
-                else:
-                    return self._fetch_missing_data(ticker, cache_data, start_date, end_date)
-            else:
-                print(f"Cache expired for {ticker}. Fetching fresh data...")
-                dat = yf.download(ticker, start=start_date, end=end_date)
-                self.memory_cache[ticker] = dat
-                dat.to_parquet(file_path)
-                return dat
-
-        #L3 cache layer here.. 
-        else:
-            dat = yf.download(ticker, start = start_date, end = end_date)
-            self.memory_cache[ticker] = dat
-            dat.to_parquet(file_path)
-            return dat
-
+        return cached.loc[start_date:end_date]
 
     def fetch_current_price(self, ticker):
+        """Most recent close. Raises rather than returning None on failure."""
         today = datetime.now()
 
-        try:
-            current_data = self.get_historical_prices(ticker = ticker, start_date = today - timedelta(days=7), end_date = today)
-            current_data = current_data["Close"].iloc[-1]
-            return current_data
-        
-        except Exception as e:
-            print(f"The price value for today can not be fetched due to {e}")
+        data = self.get_historical_prices(
+            ticker = ticker,
+            start_date = today - timedelta(days = 7),
+            end_date = today,
+        )
 
-            
+        if data is None or data.empty:
+            raise ValueError(f"No recent price available for {ticker!r}.")
+
+        return data["Close"].squeeze().iloc[-1]
+
     def fetch_multiple(self, tickers, start_date, end_date):
 
         data_multiple = dict()
@@ -122,20 +232,15 @@ class MarketDataFetcher():
             data_multiple[ticker] = data_price
         return data_multiple
 
-
     def fetch_dividends(self, ticker, start_date, end_date):
 
-        dividends= yf.Ticker(ticker).dividends
-        filter_div = dividends[start_date:end_date]
-        
-        return filter_div
+        dividends = yf.Ticker(ticker).dividends
 
+        # The series comes back tz-aware; slicing it with naive timestamps
+        # raises rather than filtering.
+        if dividends.empty:
+            return dividends
+        if dividends.index.tz is not None:
+            dividends.index = dividends.index.tz_localize(None)
 
-
-                
-
-
-
-
-
-
+        return dividends.loc[pd.Timestamp(start_date):pd.Timestamp(end_date)]
