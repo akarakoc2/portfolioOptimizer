@@ -14,11 +14,12 @@ class FakeFetcher:
     requested range, mirroring what MarketDataFetcher hands back.
     """
 
-    def __init__(self, prices, calendar=None, dividends=None, splits=None):
+    def __init__(self, prices, calendar=None, dividends=None, splits=None, fx=None):
         self.prices = prices
         self.calendar = calendar or pd.bdate_range("2024-01-01", "2024-03-29")
         self.dividends = dividends or {}
         self.splits = splits or {}
+        self.fx = fx or {}
         self.calls = []
 
     def get_historical_prices(self, ticker, start_date, end_date):
@@ -34,6 +35,16 @@ class FakeFetcher:
 
     def fetch_current_price(self, ticker):
         return self.get_historical_prices(ticker, None, None)["Close"].iloc[-1]
+
+    def get_fx_rates(self, from_currency, to_currency, start_date=None, end_date=None):
+        if from_currency == to_currency:
+            return None
+        rate = self.fx.get((from_currency, to_currency))
+        if rate is None:
+            raise ValueError(f"no test rate for {from_currency}->{to_currency}")
+        if isinstance(rate, dict):
+            return pd.Series({pd.Timestamp(k): v for k, v in rate.items()}).sort_index()
+        return pd.Series(rate, index=self.calendar)
 
     def fetch_dividends(self, ticker, start_date=None, end_date=None):
         payments = self.dividends.get(ticker, {})

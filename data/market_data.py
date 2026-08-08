@@ -248,6 +248,33 @@ class MarketDataFetcher():
 
         return data["Close"].squeeze().iloc[-1]
 
+    def get_fx_rates(self, from_currency, to_currency, start_date, end_date):
+        """Units of `to_currency` per unit of `from_currency`, daily.
+
+        Multiply an amount in `from_currency` by this to get `to_currency`.
+        Routed through get_historical_prices, so FX inherits the same
+        merge-only cache as everything else.
+        """
+        from_currency = str(from_currency).strip().upper()
+        to_currency = str(to_currency).strip().upper()
+
+        if from_currency == to_currency:
+            return None                         # caller treats None as a rate of 1
+
+        direct = self.get_historical_prices(f"{from_currency}{to_currency}=X", start_date, end_date)
+        if not direct.empty:
+            return direct["Close"].squeeze()
+
+        # Yahoo carries most pairs both ways round, but not all of them.
+        inverse = self.get_historical_prices(f"{to_currency}{from_currency}=X", start_date, end_date)
+        if not inverse.empty:
+            return 1.0 / inverse["Close"].squeeze()
+
+        raise ValueError(
+            f"No FX rates available for {from_currency}->{to_currency}. Tried "
+            f"{from_currency}{to_currency}=X and {to_currency}{from_currency}=X."
+        )
+
     def fetch_multiple(self, tickers, start_date, end_date):
 
         data_multiple = dict()

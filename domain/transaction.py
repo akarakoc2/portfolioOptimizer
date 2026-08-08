@@ -3,7 +3,12 @@ from datetime import date
 
 class Transaction:
     VALID_TYPES = {"BUY", "SELL"}
-    VALID_CURRENCIES = {"EUR", "USD", "GBP"}
+    # Kept as an explicit set so a typo is rejected rather than sent to the FX
+    # lookup. Add codes as needed -- anything Yahoo carries a pair for works.
+    VALID_CURRENCIES = {
+        "USD", "EUR", "GBP", "TRY", "CHF", "JPY",
+        "CAD", "AUD", "SEK", "NOK", "DKK", "PLN",
+    }
     
     def __init__(self,ticker, transaction_date, transaction_type, quantity, cost_per_unit, fees, currency):
         ticker = ticker.upper()

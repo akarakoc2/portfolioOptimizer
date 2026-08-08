@@ -134,20 +134,27 @@ class PortfolioSummary():
         # Split-adjusted, so it shares a basis with the price. pos.net_quantity
         # is the share count as recorded, which is stale after a split.
         last_quantities = self.ts.build_holding_frames().iloc[-1]
+        last_fx = self.ts.build_fx_frames().iloc[-1]
+        currencies = self.ts.instrument_currencies
         total_value = self.portfolio_value.iloc[-1]
 
         for pos in self.portfolio.open_positions():
+            # Price stays in the currency it is quoted in; everything that gets
+            # summed or weighted is converted, so the two are not comparable
+            # without the rate. Hence reporting both.
             current_price = last_prices[pos.ticker]
+            rate = last_fx[pos.ticker]
             quantity = last_quantities[pos.ticker]
-            current_value = current_price * quantity
+            current_value = current_price * quantity * rate
             # Total outlay is split-invariant; per-share cost is not, so derive
             # it from the adjusted count to stay comparable with current_price.
-            cost_basis = pos.average_cost_basis * pos.net_quantity
+            cost_basis = pos.average_cost_basis * pos.net_quantity * rate
             unrealized_pnl = current_value - cost_basis
 
             positions.append({
                 "ticker" : pos.ticker,
                 "quantity": quantity,
+                "currency": currencies[pos.ticker],
                 "avg_cost": cost_basis / quantity if quantity else float('nan'),
                 "current_price": current_price,
                 "current_value": current_value,
