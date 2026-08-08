@@ -39,3 +39,35 @@ def test_zero_fee_round_trip_is_sign_symmetric():
 def test_transaction_type_is_validated_at_construction():
     with pytest.raises(ValueError):
         Transaction("aapl", "2024-01-02", "GIFT", 1, 100, 0, "USD")
+
+
+def test_fully_closed_position_is_not_open():
+    """Fractional lots leave a float residue, so `> 0` reported phantom holdings."""
+    from domain.position import Position
+    pos = Position(Transaction("vde", "2025-11-18", "BUY", 3.240472, 126.89, 0, "USD"))
+    pos.add_transaction(Transaction("vde", "2025-11-18", "BUY", 3.23972, 126.89, 0, "USD"))
+    pos.add_transaction(Transaction("vde", "2025-12-10", "SELL", 3.23972, 129.64, 0, "USD"))
+    pos.add_transaction(Transaction("vde", "2026-02-11", "SELL", 3.240472, 153.51, 0, "USD"))
+
+    assert not pos.is_open
+    assert pos.average_cost_basis == 0.0
+
+
+def test_reopened_position_forgets_the_closed_lot():
+    """A lot closed in 2025 must not drag the basis of one reopened in 2026."""
+    from domain.position import Position
+    pos = Position(Transaction("akbnk.is", "2025-04-23", "BUY", 670, 51.40, 0, "TRY"))
+    pos.add_transaction(Transaction("akbnk.is", "2025-10-03", "SELL", 670, 61.30, 0, "TRY"))
+    pos.add_transaction(Transaction("akbnk.is", "2026-02-16", "BUY", 470, 86.04, 0, "TRY"))
+
+    assert pos.average_cost_basis == pytest.approx(86.04)
+
+
+def test_partial_sale_leaves_the_average_alone():
+    from domain.position import Position
+    pos = Position(Transaction("aapl", "2024-01-02", "BUY", 10, 100, 0, "USD"))
+    pos.add_transaction(Transaction("aapl", "2024-02-01", "BUY", 10, 200, 0, "USD"))
+    pos.add_transaction(Transaction("aapl", "2024-03-01", "SELL", 5, 300, 0, "USD"))
+
+    assert pos.average_cost_basis == pytest.approx(150.0)
+    assert pos.net_quantity == 15

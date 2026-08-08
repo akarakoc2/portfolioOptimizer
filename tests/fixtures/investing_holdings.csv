@@ -1,0 +1,27 @@
+"Open Positions Summary"
+"","Name","Symbol","Exchange","Type","Amount","Avg Price","Current Price","Market Value","Commission","Weight"
+"","Microsoft","MSFT.O","NASDAQ","BUY","3.00000000","400.00","500.00","$1,500.00","$1.50","60.00%"
+"","THY","THYAO.IS","IS","BUY","100.00000000","280.00","300.00","₺30,000.00","₺0.00","40.00%"
+
+"Market Value","$2,129.10"
+"Open P/L","$100.00 / 5.00%"
+
+
+"Open Positions"
+"","Name","Symbol","Exchange","Open Date","Type","Amount","Open Price","Current Price","Market Value","Commission","Net P/L%"
+"","Microsoft","MSFT.O","NASDAQ","01/20/2026","BUY","2.00000000","390.00","500.00","$1,000.00","$1.50","28.21%"
+"","Microsoft","MSFT.O","NASDAQ","02/10/2026","BUY","1.00000000","420.00","500.00","$500.00","$1.50","19.05%"
+"","THY","THYAO.IS","IS","03/02/2026","BUY","100.00000000","280.00","300.00","₺30,000.00","₺0.00","7.14%"
+"","Robotics ETF","ROBO.K","NYSE","04/02/2026","BUY","5.00000000","70.00","84.00","$420.00","$1.50","20.00%"
+
+
+"Closed Positions"
+"","Name","Symbol","Exchange","Open Date","Type","Amount","Open Price","Close Date","Close Price","Gain%","Net P/L"
+"","Apple","AAPL.O","NASDAQ","01/05/2026","BUY","4.00000000","200.00","03/10/2026","220.00","10.00%","$80.00"
+"","BASF","BASFn","ETR","01/06/2026","BUY","10.00000000","40.00","02/20/2026","44.00","10.00%","$40.00"
+"","Delisted Thing","LP68048229","IS","01/07/2026","BUY","100.00000000","1.00","02/01/2026","1.10","10.00%","$10.00"
+"","Broken Date","BAD.O","NASDAQ","31/02/2026","BUY","1.00000000","10.00","03/01/2026","11.00","10.00%","$1.00"
+"","Negative Qty","NEG.O","NASDAQ","01/08/2026","BUY","-5.00000000","10.00","03/01/2026","11.00","10.00%","$5.00"
+"","Closes First","REV.O","NASDAQ","03/01/2026","BUY","1.00000000","10.00","01/01/2026","11.00","10.00%","$1.00"
+
+"Closed P/L","$130.00"
