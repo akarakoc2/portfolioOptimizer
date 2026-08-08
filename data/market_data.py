@@ -22,18 +22,25 @@ class MarketDataFetcher():
     deal in a UI, where every widget change re-runs the pipeline.
     """
 
-    # Pinned rather than left to the library default, which changed in
-    # yfinance 0.2.51 and silently moved every historical number with it.
-    # True means prices are split- and dividend-adjusted, which is a different
-    # basis from the raw prices recorded on transactions -- see the note in
-    # get_historical_prices.
-    AUTO_ADJUST = True
+    # False means Close is the price that actually traded, adjusted for splits
+    # but not for dividends. That is the same basis a transaction records, so
+    # portfolio value and cash flows are directly comparable. Dividends are
+    # handled as cash income instead of being folded into the price.
+    #
+    # Note yfinance always split-adjusts, under either setting. Quantities
+    # recorded on transactions are therefore on a stale share basis after a
+    # split, which PortfolioTimeSeries corrects.
+    #
+    # Pinned rather than inherited: the library default changed in 0.2.51 and
+    # moved every historical number with it.
+    AUTO_ADJUST = False
 
     def __init__(self, cache_directory = None, cache_expiry_days = 1):
         if cache_directory is None:
             cache_directory = os.path.join(_PACKAGE_ROOT, "cache")
 
         self.memory_cache = dict()
+        self._actions_cache = dict()
         self.cache_directory = os.path.abspath(cache_directory)
         self.cache_expiry_days = cache_expiry_days
 
@@ -53,14 +60,7 @@ class MarketDataFetcher():
 
         return key
 
-    def _cache_path(self, key):
-        """Filesystem path for a cache key, guaranteed to stay inside the cache.
-
-        The ticker used to be concatenated straight into the filename, so a
-        ticker of '../../x' wrote outside the cache directory entirely. It also
-        made the cache case-sensitive, which is why aapl.parquet and
-        AAPL.parquet both existed.
-        """
+    def _safe_name(self, key):
         safe = _SAFE_TICKER.sub("_", key)
 
         # Keep ordinary tickers readable; disambiguate anything we had to
@@ -69,12 +69,32 @@ class MarketDataFetcher():
             digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:8]
             safe = f"{safe}-{digest}"
 
-        path = os.path.abspath(os.path.join(self.cache_directory, safe + ".parquet"))
+        return safe
+
+    def _path_for(self, key, suffix):
+        """Filesystem path for a cache entry, guaranteed to stay inside the cache.
+
+        The ticker used to be concatenated straight into the filename, so a
+        ticker of '../../x' wrote outside the cache directory entirely. It also
+        made the cache case-sensitive, which is why aapl.parquet and
+        AAPL.parquet both existed.
+        """
+        name = f"{self._safe_name(key)}-{suffix}.parquet"
+        path = os.path.abspath(os.path.join(self.cache_directory, name))
 
         if os.path.commonpath([path, self.cache_directory]) != self.cache_directory:
             raise ValueError(f"Refusing to write outside the cache directory for {key!r}.")
 
         return path
+
+    def _cache_path(self, key):
+        # The adjustment basis is part of the identity of the data. Without it
+        # in the filename, flipping AUTO_ADJUST would silently reuse prices on
+        # the wrong basis.
+        return self._path_for(key, "raw" if not self.AUTO_ADJUST else "adj")
+
+    def _actions_path(self, key):
+        return self._path_for(key, "actions")
 
     # ── frame hygiene ─────────────────────────────────────────────────
 
@@ -109,20 +129,25 @@ class MarketDataFetcher():
 
     # ── cache i/o ─────────────────────────────────────────────────────
 
-    def _is_stale(self, key):
-        # An expiry of zero means "never trust the cached tail". Handled up
-        # front because comparing a just-written file's age against zero is
-        # decided by filesystem timestamp granularity, which can report the
-        # mtime a hair ahead of now() and make the answer nondeterministic.
+    def _path_is_stale(self, path):
+        # An expiry of zero means "never trust the cache". Handled up front
+        # because comparing a just-written file's age against zero is decided
+        # by filesystem timestamp granularity, which can report the mtime a
+        # hair ahead of now() and make the answer nondeterministic.
         if self.cache_expiry_days <= 0:
             return True
 
-        path = self._cache_path(key)
         if not os.path.exists(path):
             return True
 
         age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(path))
         return age >= timedelta(days = self.cache_expiry_days)
+
+    def _is_stale(self, key):
+        return self._path_is_stale(self._cache_path(key))
+
+    def _is_actions_stale(self, key):
+        return self._path_is_stale(self._actions_path(key))
 
     def _load(self, key):
         if key in self.memory_cache:
@@ -232,15 +257,65 @@ class MarketDataFetcher():
             data_multiple[ticker] = data_price
         return data_multiple
 
+    def _download_actions(self, ticker):
+        actions = yf.Ticker(ticker).actions
+
+        if actions is None or actions.empty:
+            return pd.DataFrame(columns = ["Dividends", "Stock Splits"])
+
+        return self._normalize_index(actions)
+
+    def get_actions(self, ticker):
+        """Dividends per share and split ratios, indexed by ex-date.
+
+        Both come back on the current (split-adjusted) share basis, matching
+        the price series. Fetched whole rather than by window -- the history is
+        a handful of rows -- so there is nothing to merge.
+        """
+        key = self._cache_key(ticker)
+
+        if key in self._actions_cache:
+            return self._actions_cache[key]
+
+        path = self._actions_path(key)
+
+        if os.path.exists(path) and not self._is_actions_stale(key):
+            try:
+                actions = self._normalize_index(pd.read_parquet(path))
+                self._actions_cache[key] = actions
+                return actions
+            except Exception as exc:
+                print(f"Warning: actions cache for {key} is unreadable ({exc}). Refetching.")
+
+        actions = self._download_actions(ticker)
+        self._actions_cache[key] = actions
+        actions.to_parquet(path)
+        return actions
+
     def fetch_dividends(self, ticker, start_date, end_date):
+        actions = self.get_actions(ticker)
 
-        dividends = yf.Ticker(ticker).dividends
+        if actions.empty or "Dividends" not in actions:
+            return pd.Series(dtype = float)
 
-        # The series comes back tz-aware; slicing it with naive timestamps
-        # raises rather than filtering.
-        if dividends.empty:
-            return dividends
-        if dividends.index.tz is not None:
-            dividends.index = dividends.index.tz_localize(None)
+        dividends = actions["Dividends"]
+        dividends = dividends[dividends > 0]
 
         return dividends.loc[pd.Timestamp(start_date):pd.Timestamp(end_date)]
+
+    def fetch_splits(self, ticker, start_date = None, end_date = None):
+        """Split ratios by ex-date. A 10-for-1 comes back as 10.0."""
+        actions = self.get_actions(ticker)
+
+        if actions.empty or "Stock Splits" not in actions:
+            return pd.Series(dtype = float)
+
+        splits = actions["Stock Splits"]
+        splits = splits[splits > 0]
+
+        if start_date is not None or end_date is not None:
+            start = pd.Timestamp(start_date) if start_date is not None else splits.index.min()
+            end = pd.Timestamp(end_date) if end_date is not None else splits.index.max()
+            splits = splits.loc[start:end]
+
+        return splits

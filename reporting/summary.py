@@ -1,11 +1,10 @@
 from domain.portfolio import Portfolio
 from analytics.timeseries import PortfolioTimeSeries
 from analytics.performance import PerformanceCalculator
-import datetime
 from analytics.mwr import MWRCalculator
 from analytics.twr import TWRcalculator
 import pandas as pd
-from analytics.benchmark import BenchmarkComperator
+from analytics.benchmark import BenchmarkComparator
 
 class PortfolioSummary():
     def __init__(self, portfolio: Portfolio, fetcher, benchmark_ticker = "SPY", risk_free = 0):
@@ -15,7 +14,6 @@ class PortfolioSummary():
         self.rf = risk_free
         self.port_inception = self.portfolio.creation_date
         self.ts = PortfolioTimeSeries(portfolio= portfolio, fetcher=fetcher)
-        self.twr_dates = self.ts.cashflow_dates
         self.portfolio_value = self.ts.portfolio_value()
         self.portfolio_returns = self.ts.portfolio_returns()
         self.perf = PerformanceCalculator(self.portfolio_value, self.portfolio_returns, risk_free=risk_free)
@@ -31,7 +29,7 @@ class PortfolioSummary():
         benchmark_data = self.fetcher.get_historical_prices(ticker=self.benchmark_ticker,start_date=self.portfolio_value.index.min(),end_date=self.portfolio_value.index.max())
         self.bnch_return = benchmark_data["Close"].squeeze().pct_change().dropna()
 
-        self.bnch = BenchmarkComperator(portfolio_returns=self.portfolio_returns, benchmark_returns=self.bnch_return, risk_free=self.rf, mf=self.fetcher)
+        self.bnch = BenchmarkComparator(portfolio_returns=self.portfolio_returns, benchmark_returns=self.bnch_return, risk_free=self.rf, mf=self.fetcher)
 
     def get_summary(self):
         return {
@@ -133,18 +131,24 @@ class PortfolioSummary():
         # fetch_current_price here dated the numerator to today while the
         # denominator was the last close, so weights never summed to 1.
         last_prices = self.ts.build_price_frames().iloc[-1]
+        # Split-adjusted, so it shares a basis with the price. pos.net_quantity
+        # is the share count as recorded, which is stale after a split.
+        last_quantities = self.ts.build_holding_frames().iloc[-1]
         total_value = self.portfolio_value.iloc[-1]
 
         for pos in self.portfolio.open_positions():
             current_price = last_prices[pos.ticker]
-            current_value = current_price * pos.net_quantity
+            quantity = last_quantities[pos.ticker]
+            current_value = current_price * quantity
+            # Total outlay is split-invariant; per-share cost is not, so derive
+            # it from the adjusted count to stay comparable with current_price.
             cost_basis = pos.average_cost_basis * pos.net_quantity
             unrealized_pnl = current_value - cost_basis
 
             positions.append({
                 "ticker" : pos.ticker,
-                "quantity": pos.net_quantity,
-                "avg_cost": pos.average_cost_basis,
+                "quantity": quantity,
+                "avg_cost": cost_basis / quantity if quantity else float('nan'),
                 "current_price": current_price,
                 "current_value": current_value,
                 "unrealized_pnl": unrealized_pnl,

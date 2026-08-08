@@ -16,10 +16,14 @@ class Position():
         if self.ticker != transaction.ticker:
             raise ValueError("The position you want to add is not opened yet!")
 
+        # Deliberately no date-ordering check here: transactions arrive in
+        # whatever order the caller has them, and a CSV import will not be
+        # sorted. Selling before you own is caught in
+        # PortfolioTimeSeries.build_holding_frames, where the dates are known.
         if transaction.transaction_type == 'SELL':
             if transaction.quantity > self.net_quantity:
                 raise ValueError("Not enough position to sell")
-            
+
         self.transactions.append(transaction)
 
     @property

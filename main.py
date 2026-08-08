@@ -46,7 +46,6 @@ if __name__ == "__main__":
     print(100* "=")
 
     # ── 4. TIME WEIGHTED RETURN ──────────────────────
-    cash_flow_dates = time_s.cashflow_dates
 
    
     print(100* "=")
