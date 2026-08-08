@@ -208,6 +208,113 @@ the whole path.
 Steps 1 and 2 are the ones that touch existing behaviour, so they want the
 tests. Steps 3 to 5 are additive.
 
+## Profile: investing.com holdings export
+
+Filename looks like `My Holdings_Holdings_08082026.csv`. Verified against a
+real export, August 2026.
+
+### Structure
+
+Not one table — three, stacked, with different column counts. A plain
+`csv.DictReader` over the file will not work.
+
+| rows | section | cols | use |
+|------|---------|------|-----|
+| 0–21 | `Open Positions Summary` | 53 | **skip** — aggregate of the next section, no dates |
+| 23–46 | `Open Positions` | 20 | one row per lot, has `Open Date` |
+| 48–79 | `Closed Positions` | 12 | one row per round trip, has `Open Date` and `Close Date` |
+
+Split on single-cell rows, then parse each block against its own header.
+
+### Reconstructing a ledger
+
+This is a *holdings* export, not a transaction log, but the per-lot sections
+carry enough to rebuild one:
+
+- each **Open Positions** row → one `BUY` at `Open Date`
+- each **Closed Positions** row → one `BUY` at `Open Date` **plus** one `SELL`
+  at `Close Date`
+
+Sanity check that the reconstruction is faithful: summed lot quantities must
+equal the summary section's `Amount`. On the reference file ISCTR's two lots
+(1215 + 2718) match its summary row of 3933.
+
+Where the same symbol and open date appear on several closed rows with slightly
+different amounts, treat each row as its own independent round trip. The net
+position still lands at zero and the cash flows are right; trying to stitch
+them into one partially-closed lot is guesswork.
+
+### Known gaps in the source data
+
+- **No commission on closed positions.** The column simply is not in that
+  section, so sell-side fees are unavailable. Record zero and warn.
+- **No dividends, deposits or withdrawals.** Nothing in the export represents
+  them, so imported portfolios keep relying on auto-funding and on dividends
+  derived from yfinance.
+- **`Open Date` is the lot open, not necessarily a single purchase.** Fine for
+  our purposes; noted so nobody reads it as trade-level truth.
+
+### Symbol mapping
+
+investing.com uses Reuters-style suffixes. Strip the exchange marker, keep the
+country marker:
+
+| suffix / exchange | rule | example |
+|---|---|---|
+| `.O` (NASDAQ) | strip | `MSFT.O` → `MSFT` |
+| `.K` (NYSE Arca) | strip | `ROBO.K` → `ROBO` |
+| `.IS` (Istanbul) | keep | `THYAO.IS` → `THYAO.IS` |
+| no suffix, NYSE | keep | `V` → `V` |
+| exchange `ETR` | **manual** | `BASFn` → `BAS.DE` |
+
+All 13 currently-held symbols resolve under those rules, and the resulting
+prices match the export's own `Current Price` column to the cent.
+
+Four symbols in the closed section do not, and need an explicit override table:
+
+| symbol | why | resolution |
+|---|---|---|
+| `BASFn` | Reuters suffix, not a Yahoo one | `BAS.DE` |
+| `CBKG` | same | `CBK.DE` |
+| `IAS.O` | taken private, delisted | no price history — exclude |
+| `LP68048229` | Turkish fund code, not on Yahoo | no price history — exclude |
+
+So the profile needs a hand-maintained `SYMBOL_OVERRIDES` dict alongside the
+suffix rules, and unresolvable symbols must be a *warning that names them*, not
+a silent drop.
+
+### Field parsing
+
+- **Dates** are `MM/DD/YYYY` (`05/26/2026` disambiguates it).
+- **Money** carries a symbol, thousands separators, and sometimes a sign:
+  `$1,002.76`, `₺33,072.00`, `-$25.15`. Strip to a number *and keep the symbol*
+  — it is the only currency marker on the row.
+- **Quantities** are fractional to 8 dp (`0.65100000`).
+- `--` means not applicable; `-` means no value. Both are nulls.
+
+### Currency
+
+The blocker for this file. Market values are quoted in the instrument's own
+currency — `$571.30` for US listings, `₺33,072.00` for Istanbul — and on the
+reference export the Turkish positions are **27% of the portfolio**. Summing
+those columns without conversion is meaningless.
+
+Note the export's own total ($11,513.37) does not match converting the parts at
+today's USDTRY ($10,937.42). The 5% gap is which rate was used and when, which
+is exactly the design question:
+
+- **cost basis** converts at the transaction date
+- **market value** converts at each daily valuation date
+
+Do both and FX movement lands in the return, which is correct for a
+USD-reporting holder. `USDTRY=X` is available through the existing fetcher, so
+the data is not the hard part — threading a per-currency rate series through
+`build_price_frames` and `build_cash_and_flows` is.
+
+**Currency conversion has to land before this profile is useful.** A
+US-only subset of the file would import correctly today; the whole thing
+would not.
+
 ## Deliberately out of scope
 
 - **Currency conversion.** Import can *record* a currency and warn on a
