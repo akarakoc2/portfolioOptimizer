@@ -9,17 +9,24 @@ import os
 
 import pytest
 
+from conftest import FakeFetcher
+
 from data.investing_csv import (
     ImportReport,
+    SymbolResolver,
     build_portfolio,
     parse_date,
     parse_money,
     read_transactions,
     split_sections,
+    symbol_candidates,
     to_yahoo_symbol,
 )
 
 FIXTURE = os.path.join(os.path.dirname(__file__), "fixtures", "investing_holdings.csv")
+
+# Xetra rows, as investing.com writes them for a cross-listed holding.
+CROSS_LISTED = os.path.join(os.path.dirname(__file__), "fixtures", "investing_cross_listed.csv")
 
 
 # ── field parsing ─────────────────────────────────────────────────────
@@ -186,6 +193,7 @@ def test_holdings_only_import_skips_closed_positions():
     ("THYAO.IS", "TRY"),
     ("BAS.DE", "EUR"),
     ("VOD.L", "GBP"),
+    ("WRT1V.HE", "EUR"),     # Helsinki, which used to fall through to dollars
 ])
 def test_currency_inferred_from_listing(symbol, expected):
     """Closed rows carry no currency symbol, so the venue has to say."""
@@ -197,3 +205,114 @@ def test_german_listing_is_not_assumed_to_be_dollars():
     report = read_transactions(FIXTURE)
     basf = [t for t in report.transactions if t.ticker == "BAS.DE"]
     assert basf and all(t.currency == "EUR" for t in basf)
+
+
+# ── cross-listed symbols ──────────────────────────────────────────────
+#
+# A secondary listing has its own local ticker: Microsoft on Xetra is MSF.DE.
+# Appending the venue suffix to the US ticker produces MSFT.DE, which Yahoo
+# answers with YFPricesMissingError -- and only at valuation time, long after
+# the import said it was fine.
+
+@pytest.mark.parametrize("symbol,exchange,expected", [
+    ("MSFT", "ETR", "MSF.DE"),           # suffix appended from the exchange
+    ("MSFT.DE", "ETR", "MSF.DE"),        # suffix already on the symbol
+    ("NVDA.DE", "ETR", "NVD.DE"),
+    ("GOOGL.DE", "ETR", "ABEA.DE"),
+    ("MSFT.O", "NASDAQ", "MSFT"),        # a US row is not a cross-listing
+])
+def test_xetra_rows_use_the_local_ticker(symbol, exchange, expected):
+    assert to_yahoo_symbol(symbol, exchange) == expected
+
+
+def test_candidates_run_stated_venue_first_primary_listing_last():
+    """Order matters: the first candidate that resolves fixes the currency."""
+    assert symbol_candidates("MSFT.DE", "ETR") == ["MSF.DE", "MSFT.DE", "MSFT"]
+    assert symbol_candidates("BASFn", "ETR")[0] == "BAS.DE"      # override wins
+
+
+def test_resolution_stops_at_the_first_candidate_with_prices():
+    fetcher = FakeFetcher({"MSF.DE": {"2024-01-01": 400.0}})
+    resolution = SymbolResolver(fetcher).resolve("MSFT.DE", "ETR")
+
+    assert resolution.ticker == "MSF.DE"
+    assert resolution.currency == "EUR"
+    assert not resolution.venue_changed
+    assert resolution.note is None
+
+
+def test_a_resolved_symbol_is_not_probed_twice():
+    """Validation is a network call; the resolution has to be remembered."""
+    fetcher = FakeFetcher({"MSF.DE": {"2024-01-01": 400.0}})
+    resolver = SymbolResolver(fetcher)
+
+    resolver.resolve("MSFT.DE", "ETR")
+    probes = list(resolver.probes)
+    resolver.resolve("MSFT.DE", "ETR")
+
+    assert resolver.probes == probes, "re-probed a symbol already resolved"
+
+
+def test_failed_resolutions_are_cached_too(tmp_path):
+    """A negative is the expensive probe, and the price cache cannot hold one."""
+    cache = str(tmp_path / "resolutions.parquet")
+    fetcher = FakeFetcher({})
+
+    first = SymbolResolver(fetcher, cache_path=cache)
+    assert not first.resolve("NOPE.DE", "ETR").ok
+    assert first.probes
+
+    second = SymbolResolver(fetcher, cache_path=cache)
+    assert not second.resolve("NOPE.DE", "ETR").ok
+    assert second.probes == [], "reprobed a symbol known not to resolve"
+
+
+def test_seeded_mappings_need_no_probe():
+    resolver = SymbolResolver()          # no provider at all
+    assert resolver.resolve("MSFT.DE", "ETR").ticker == "MSF.DE"
+    assert resolver.probes == []
+
+
+def test_cross_listing_resolves_to_its_local_ticker():
+    fetcher = FakeFetcher({"MSF.DE": {"2024-01-01": 400.0}, "FLNC": {"2024-01-01": 14.0}})
+    report = read_transactions(CROSS_LISTED, resolver=SymbolResolver(fetcher))
+
+    microsoft = [t for t in report.transactions if t.ticker == "MSF.DE"]
+    assert len(microsoft) == 1
+    assert microsoft[0].currency == "EUR"
+    assert not any("MSFT.DE" in w for w in report.warnings)
+
+
+def test_venue_fallback_warns_and_corrects_the_currency():
+    """Resolving a Xetra row to the US listing moves the price into dollars."""
+    fetcher = FakeFetcher({"MSF.DE": {"2024-01-01": 400.0}, "FLNC": {"2024-01-01": 14.0}})
+    report = read_transactions(CROSS_LISTED, resolver=SymbolResolver(fetcher))
+
+    fluence = [t for t in report.transactions if t.ticker == "FLNC"]
+    assert len(fluence) == 1, "the Xetra row should fall back to the US listing"
+    assert fluence[0].currency == "USD", "kept the row's EUR marker against a USD quote"
+
+    warning = [w for w in report.warnings if "FLNC.DE" in w]
+    assert warning, "venue fallback was silent"
+    assert "USD" in warning[0] and "EUR" in warning[0]
+
+
+def test_unresolvable_symbol_is_named_not_dropped():
+    fetcher = FakeFetcher({"MSF.DE": {"2024-01-01": 400.0}, "FLNC": {"2024-01-01": 14.0}})
+    report = read_transactions(CROSS_LISTED, resolver=SymbolResolver(fetcher))
+
+    assert not any(t.ticker.startswith("NOPE") for t in report.transactions)
+
+    warning = [w for w in report.warnings if "NOPE.DE" in w]
+    assert warning, "unresolvable symbol vanished without a word"
+    assert "NOPE" in warning[0], "the candidates tried are not in the report"
+
+
+def test_import_without_a_provider_verifies_nothing():
+    """Offline imports still work; they just cannot promise the ticker is live."""
+    report = read_transactions(CROSS_LISTED)
+    tickers = {t.ticker for t in report.transactions}
+
+    assert "MSF.DE" in tickers, "seeded mapping should apply without a provider"
+    assert "FLNC.DE" in tickers, "unverified candidate is taken at face value"
+    assert report.ok

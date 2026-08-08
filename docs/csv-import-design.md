@@ -283,6 +283,42 @@ So the profile needs a hand-maintained `SYMBOL_OVERRIDES` dict alongside the
 suffix rules, and unresolvable symbols must be a *warning that names them*, not
 a silent drop.
 
+### Cross-listings break the suffix rules outright
+
+The rules above assume a symbol plus a venue suffix identifies a listing. On any
+venue that cross-lists, it does not: a secondary listing has its own local
+ticker, unrelated to the primary one.
+
+| export row | suffix rule gives | actual Yahoo listing |
+|---|---|---|
+| `MSFT.DE` / `ETR` | `MSFT.DE` — delisted error | `MSF.DE` |
+| `AAPL` / `ETR` | `AAPL.DE` — delisted error | `APC.DE` |
+| `NVDA.DE` / `ETR` | `NVDA.DE` — delisted error | `NVD.DE` |
+
+Nothing derives one from the other, so translation cannot be a function that
+returns an answer. It has to return *candidates*, and something has to check
+them. `SymbolResolver` does both:
+
+1. `symbol_candidates()` orders the guesses — `SYMBOL_OVERRIDES`, then the
+   seeded `LOCAL_LISTINGS` entry for the venue, then the plain suffix rule, then
+   the bare symbol. Venue-consistent guesses come first because they are the
+   only ones that keep the row's quote currency.
+2. Each candidate is probed against the price provider; the first with price
+   history wins. Without a provider the first candidate stands unverified,
+   which is all an offline import can honestly claim.
+3. Falling through to the bare symbol means pricing a Xetra row in dollars, so
+   it warns *and* rewrites `Transaction.currency` to the venue that resolved.
+   Leaving the row's `€` marker in place would have the FX layer convert a
+   dollar price as though it were euros.
+4. Decisions are cached in the fetcher's cache directory, negatives included —
+   a symbol that resolves to nothing is the one probe the price cache cannot
+   remember, since empty frames are never written.
+
+`LOCAL_LISTINGS` is seeded with the common Xetra/US pairs so the frequent cases
+never probe at all. Every entry was checked against the provider for company
+name, currency and exchange, and that is the bar for adding one: a wrong entry
+prices the wrong security in silence, which is worse than no entry.
+
 ### Field parsing
 
 - **Dates** are `MM/DD/YYYY` (`05/26/2026` disambiguates it).
