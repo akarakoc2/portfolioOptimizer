@@ -402,6 +402,30 @@ class PortfolioTimeSeries():
         return percentage_chg
 
 
+    def asset_returns(self):
+        """Daily total return of each holding, in base currency.
+
+        The *instrument's* return, not your position's: it carries no trace of
+        when you bought or sold, which is what covariance and correlation want.
+        Includes dividends and the currency move, so a lira holding shows both
+        the stock and the lira.
+        """
+        prices = self.build_price_frames() * self.build_fx_frames()
+        dividends = self.build_dividend_frames() * self.build_fx_frames()
+
+        returns = (prices + dividends) / prices.shift(1) - 1
+        returns = returns.replace([float('inf'), float('-inf')], float('nan'))
+
+        return returns.dropna(how="all")
+
+    def current_weights(self):
+        """Share of portfolio value held in each position, most recent day."""
+        values = self.build_value_frame().iloc[-1]
+        total = values.sum()
+        if total == 0:
+            return values * 0.0
+        return values / total
+
     @property
     def cashflow_dates(self):
         dates = []
