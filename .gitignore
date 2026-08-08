@@ -28,6 +28,11 @@ cache/
 # Strip outputs before committing (e.g. nbstripout) rather than
 # ignoring notebooks wholesale.
 
+# ── Real portfolio data ──────────────────────────────────────────────
+# Broker exports are personal financial records and this repo is public.
+# Put them here; nothing in it is ever committed.
+private/
+
 # ── Secrets / local config ───────────────────────────────────────────
 .env
 .env.*

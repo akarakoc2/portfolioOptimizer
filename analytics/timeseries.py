@@ -18,6 +18,11 @@ class PortfolioTimeSeries():
     out of returns.
     """
 
+    # Calendar days of price history fetched before a position opens, so a
+    # forward-fill always has something to work from. Generous enough to
+    # clear an extended market closure such as a Bayram week.
+    PRICE_LOOKBACK_DAYS = 15
+
     def __init__(self, portfolio, fetcher, start_date = None, end_date = None):
         self.portfolio = portfolio
         if start_date is None:
@@ -155,7 +160,12 @@ class PortfolioTimeSeries():
         ticker_starts = self.ticker_start_dates
 
         for ticker in self.tickers:
-            ticker_start = ticker_starts[ticker]
+            # Reach back before the first trade so there is always an earlier
+            # bar to forward-fill from. Buying on a day the listing's own market
+            # was shut -- 2025-04-23 is a public holiday in Turkey, and the
+            # business-day calendar does not know that -- otherwise leaves the
+            # first day priceless with nothing behind it.
+            ticker_start = ticker_starts[ticker] - pd.Timedelta(days=self.PRICE_LOOKBACK_DAYS)
             data = self.fetcher.get_historical_prices(
                 ticker=ticker,
                 start_date=ticker_start,
