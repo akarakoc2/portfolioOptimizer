@@ -89,3 +89,14 @@ def test_price_frames_are_fetched_once(fetcher):
     ts.portfolio_value()
     ts.portfolio_returns()
     assert fetcher.calls.count("AAPL") == 1
+
+
+def test_selling_before_buying_is_caught(fetcher):
+    """Position sees only a running total; the date conflict shows up here."""
+    portfolio = Portfolio("test", "USD", creation_date="2024-01-01")
+    portfolio.add_transaction(Transaction("aapl", "2024-02-01", "BUY", 10, 100, 0, "USD"))
+    portfolio.add_transaction(Transaction("aapl", "2024-01-15", "SELL", 10, 100, 0, "USD"))
+
+    ts = PortfolioTimeSeries(portfolio, fetcher=fetcher, end_date="2024-03-29")
+    with pytest.raises(ValueError, match="negative"):
+        ts.build_holding_frames()

@@ -16,10 +16,14 @@ class Position():
         if self.ticker != transaction.ticker:
             raise ValueError("The position you want to add is not opened yet!")
 
+        # Deliberately no date-ordering check here: transactions arrive in
+        # whatever order the caller has them, and a CSV import will not be
+        # sorted. Selling before you own is caught in
+        # PortfolioTimeSeries.build_holding_frames, where the dates are known.
         if transaction.transaction_type == 'SELL':
             if transaction.quantity > self.net_quantity:
                 raise ValueError("Not enough position to sell")
-            
+
         self.transactions.append(transaction)
 
     @property
@@ -32,26 +36,48 @@ class Position():
                 total_quantity -= i.quantity
         return total_quantity
     
+    # Fractional share counts do not cancel exactly: a bought-then-fully-sold
+    # position lands on a float residue near 1e-16 rather than on zero.
+    QUANTITY_TOLERANCE = 1e-9
+
     @property
     def average_cost_basis(self):
+        """Moving average cost of the shares currently held.
 
-        total_buys = [x for x in self.transactions if x.transaction_type == "BUY"]
-        cost_total = 0
-        total_quantity = 0
-        for i in total_buys:
-            cost_total += i.quantity * i.cost_per_unit
-            total_quantity += i.quantity
+        Walks in date order, carrying a running total: a BUY adds its cost, a
+        SELL removes shares at the average prevailing then, which leaves the
+        average untouched for whatever remains. Once the position closes the
+        running total returns to zero, so reopening it starts a fresh basis.
 
-        if total_quantity != 0:
-            average_cost = cost_total / total_quantity
-        else:
-            average_cost = 0
+        Averaging every BUY ever made instead -- which is what this did -- let a
+        lot closed years ago drag the basis of a position reopened since.
+        """
+        ordered = sorted(self.transactions, key=lambda t: str(t.transaction_date))
 
-        return average_cost
-    
+        held = 0.0
+        cost = 0.0
+
+        for transaction in ordered:
+            if transaction.transaction_type == "BUY":
+                held += transaction.quantity
+                cost += transaction.quantity * transaction.cost_per_unit
+            else:
+                average = cost / held if held > self.QUANTITY_TOLERANCE else 0.0
+                held -= transaction.quantity
+                cost -= transaction.quantity * average
+
+            if held <= self.QUANTITY_TOLERANCE:
+                held = 0.0
+                cost = 0.0
+
+        if held <= self.QUANTITY_TOLERANCE:
+            return 0.0
+
+        return cost / held
+
     @property
     def is_open(self):
-        return self.net_quantity > 0 
+        return self.net_quantity > self.QUANTITY_TOLERANCE
 
 
     def __repr__(self):

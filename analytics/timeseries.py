@@ -18,6 +18,11 @@ class PortfolioTimeSeries():
     out of returns.
     """
 
+    # Calendar days of price history fetched before a position opens, so a
+    # forward-fill always has something to work from. Generous enough to
+    # clear an extended market closure such as a Bayram week.
+    PRICE_LOOKBACK_DAYS = 15
+
     def __init__(self, portfolio, fetcher, start_date = None, end_date = None):
         self.portfolio = portfolio
         if start_date is None:
@@ -43,6 +48,9 @@ class PortfolioTimeSeries():
         self._holding_frames = None
         self._price_frames = None
         self._cash_and_flows = None
+        self._dividend_frames = None
+        self._split_factors = None
+        self._fx_frames = None
 
     def _snap_to_trading_day(self, when):
         """First trading day on or after `when`.
@@ -73,6 +81,34 @@ class PortfolioTimeSeries():
         rows.sort(key=lambda row: (row[0], 0 if row[1].transaction_type == "SELL" else 1))
         return rows
 
+    def split_factor(self, ticker, when):
+        """Shares today per share held on `when`.
+
+        yfinance always returns split-adjusted prices, so a quantity recorded
+        before a split is on a stale basis: 10 NVDA bought in May 2024 is 100
+        shares after the June 10-for-1. Multiplying by this factor puts every
+        recorded quantity on the same basis as the price series.
+
+        Deliberately keyed off the raw transaction date rather than the snapped
+        trading day: a Friday purchase ahead of a Monday split must still be
+        adjusted.
+        """
+        if self._split_factors is None:
+            self._split_factors = {}
+            for ticker_name in self.tickers:
+                self._split_factors[ticker_name] = self.fetcher.fetch_splits(ticker_name)
+
+        splits = self._split_factors.get(ticker)
+        if splits is None or len(splits) == 0:
+            return 1.0
+
+        when = pd.Timestamp(when).normalize()
+        later = splits[splits.index > when]
+        if len(later) == 0:
+            return 1.0
+
+        return float(later.prod())
+
     def build_holding_frames(self):
         if self._holding_frames is not None:
             return self._holding_frames
@@ -81,11 +117,12 @@ class PortfolioTimeSeries():
 
         for date, transaction in self._ordered_transactions():
             ticker = transaction.ticker
+            factor = self.split_factor(ticker, transaction.transaction_date)
 
             if transaction.transaction_type == 'BUY':
-                quantity_norm = transaction.quantity
+                quantity_norm = transaction.quantity * factor
             else:
-                quantity_norm = - transaction.quantity
+                quantity_norm = - transaction.quantity * factor
 
             list_dicts.append({"date": date, "ticker": ticker, "quantity": quantity_norm})
 
@@ -101,6 +138,17 @@ class PortfolioTimeSeries():
         df = df.ffill()
         df = df.fillna(0.0)
 
+        # Position.add_transaction only sees a running total, so a SELL dated
+        # before the BUY that covers it slips through. Here the dates are known.
+        oversold = df < -1e-9
+        if oversold.any().any():
+            offenders = oversold.any()
+            first = df.index[oversold.any(axis=1)][0].date()
+            raise ValueError(
+                f"Holdings go negative from {first} in {list(offenders[offenders].index)}: "
+                f"a sale is dated before the purchase that covers it."
+            )
+
         self._holding_frames = df
         return df
 
@@ -112,7 +160,12 @@ class PortfolioTimeSeries():
         ticker_starts = self.ticker_start_dates
 
         for ticker in self.tickers:
-            ticker_start = ticker_starts[ticker]
+            # Reach back before the first trade so there is always an earlier
+            # bar to forward-fill from. Buying on a day the listing's own market
+            # was shut -- 2025-04-23 is a public holiday in Turkey, and the
+            # business-day calendar does not know that -- otherwise leaves the
+            # first day priceless with nothing behind it.
+            ticker_start = ticker_starts[ticker] - pd.Timedelta(days=self.PRICE_LOOKBACK_DAYS)
             data = self.fetcher.get_historical_prices(
                 ticker=ticker,
                 start_date=ticker_start,
@@ -140,9 +193,73 @@ class PortfolioTimeSeries():
         return prices_df
 
 
+    @property
+    def base_currency(self):
+        return str(self.portfolio.portfolio_currency).strip().upper()
+
+    @property
+    def instrument_currencies(self):
+        """Quote currency per ticker, taken from its own transactions.
+
+        Using the recorded currency rather than asking the data provider keeps
+        this offline and makes the portfolio the authority on its own data. A
+        position whose transactions disagree is a data error worth surfacing.
+        """
+        currencies = {}
+
+        for ticker, position in self.portfolio.positions.items():
+            recorded = {t.currency for t in position.transactions}
+            if len(recorded) > 1:
+                raise ValueError(
+                    f"{ticker} has transactions in more than one currency "
+                    f"({sorted(recorded)}); a position must be quoted in one."
+                )
+            currencies[ticker] = recorded.pop()
+
+        return currencies
+
+    def build_fx_frames(self):
+        """Base-currency units per unit of each ticker's quote currency.
+
+        One column per ticker rather than per currency, so callers can multiply
+        elementwise against the price and holding frames without regrouping.
+        """
+        if self._fx_frames is not None:
+            return self._fx_frames
+
+        base = self.base_currency
+        columns = {}
+
+        for ticker, currency in self.instrument_currencies.items():
+            rates = self.fetcher.get_fx_rates(currency, base, self.start_date, self.end_date)
+
+            if rates is None:
+                columns[ticker] = pd.Series(1.0, index=self.trading_days)
+                continue
+
+            rates = pd.Series(rates).sort_index()
+            rates.index = pd.DatetimeIndex(rates.index)
+            if rates.index.tz is not None:
+                rates.index = rates.index.tz_localize(None)
+
+            # FX trades on days equities do not, and vice versa. Forward-fill
+            # over the union first: reindexing onto trading days up front would
+            # discard any rate dated before the window opens, and the bfill
+            # below would then smear a later rate back across the whole series.
+            rates = rates.reindex(rates.index.union(self.trading_days)).ffill()
+            rates = rates.reindex(self.trading_days).bfill()
+
+            if rates.isna().any():
+                raise ValueError(f"No usable {currency}->{base} rates over the portfolio window.")
+
+            columns[ticker] = rates
+
+        self._fx_frames = pd.DataFrame(columns, index=self.trading_days)
+        return self._fx_frames
+
     def build_value_frame(self):
         holding_frames = self.build_holding_frames()
-        build_prices = self.build_price_frames()
+        build_prices = self.build_price_frames() * self.build_fx_frames()
         daily_values = holding_frames * build_prices
 
         missing = daily_values.isna() & (holding_frames != 0)
@@ -154,37 +271,85 @@ class PortfolioTimeSeries():
 
         return daily_values.fillna(0.0)
 
+    def build_dividend_frames(self):
+        """Dividend per share on each trading day, one column per ticker."""
+        if self._dividend_frames is not None:
+            return self._dividend_frames
+
+        columns = {}
+        for ticker in self.tickers:
+            payments = self.fetcher.fetch_dividends(ticker, self.start_date, self.end_date)
+
+            series = pd.Series(0.0, index=self.trading_days)
+            for ex_date, amount in payments.items():
+                series.loc[self._snap_to_trading_day(ex_date)] += float(amount)
+
+            columns[ticker] = series
+
+        self._dividend_frames = pd.DataFrame(columns, index=self.trading_days)
+        return self._dividend_frames
+
+    def build_dividend_income(self):
+        """Cash received per trading day from dividends, in base currency.
+
+        Entitlement uses the previous day's holdings: buying on the ex-date does
+        not earn the dividend.
+        """
+        holdings = self.build_holding_frames()
+        entitled = holdings.shift(1).fillna(0.0)
+
+        return (entitled * self.build_dividend_frames() * self.build_fx_frames()).sum(axis=1)
+
     def build_cash_and_flows(self):
         """Daily cash balance and daily *external* cash flow.
 
         Returns (cash, flows), both on trading days. `flows` is positive when
         money enters from outside, and zero on days where trading only moved
         value between cash and holdings.
+
+        Dividends are credited here rather than folded into the price series.
+        That makes them income -- they raise the value without an accompanying
+        flow, so they show up as return -- and it lets them fund later
+        purchases, reducing the deposit those purchases would otherwise need.
+
+        Cash is held in the base currency: a trade in another currency is
+        converted at that day's rate. This assumes conversion at the time of
+        the trade rather than a per-currency cash balance, which is a
+        simplification worth knowing about if you hold foreign cash for long.
         """
         if self._cash_and_flows is not None:
             return self._cash_and_flows
+
+        dividend_income = self.build_dividend_income()
+        fx = self.build_fx_frames()
+
+        transactions_by_day = {}
+        for date, transaction in self._ordered_transactions():
+            transactions_by_day.setdefault(date, []).append(transaction)
 
         cash = 0.0
         cash_by_date = {}
         flow_by_date = {}
 
-        for date, transaction in self._ordered_transactions():
-            if transaction.transaction_type == "BUY":
-                cost = transaction.total_cost              # price * qty + fees
-                if cost > cash:
-                    deposit = cost - cash
-                    flow_by_date[date] = flow_by_date.get(date, 0.0) + deposit
-                    cash += deposit
-                cash -= cost
-            else:
-                cash += transaction.total_cost             # price * qty - fees
+        for date in self.trading_days:
+            cash += float(dividend_income.get(date, 0.0))
+
+            for transaction in transactions_by_day.get(date, ()):
+                rate = float(fx.loc[date, transaction.ticker])
+
+                if transaction.transaction_type == "BUY":
+                    cost = transaction.total_cost * rate   # (price * qty + fees), in base
+                    if cost > cash:
+                        deposit = cost - cash
+                        flow_by_date[date] = flow_by_date.get(date, 0.0) + deposit
+                        cash += deposit
+                    cash -= cost
+                else:
+                    cash += transaction.total_cost * rate  # (price * qty - fees), in base
+
             cash_by_date[date] = cash
 
-        if cash_by_date:
-            cash_series = pd.Series(cash_by_date).sort_index()
-            cash_series = cash_series.reindex(self.trading_days).ffill().fillna(0.0)
-        else:
-            cash_series = pd.Series(0.0, index=self.trading_days)
+        cash_series = pd.Series(cash_by_date).reindex(self.trading_days).ffill().fillna(0.0)
 
         if flow_by_date:
             flow_series = pd.Series(flow_by_date).sort_index()
@@ -236,6 +401,30 @@ class PortfolioTimeSeries():
         percentage_chg = percentage_chg.dropna()
         return percentage_chg
 
+
+    def asset_returns(self):
+        """Daily total return of each holding, in base currency.
+
+        The *instrument's* return, not your position's: it carries no trace of
+        when you bought or sold, which is what covariance and correlation want.
+        Includes dividends and the currency move, so a lira holding shows both
+        the stock and the lira.
+        """
+        prices = self.build_price_frames() * self.build_fx_frames()
+        dividends = self.build_dividend_frames() * self.build_fx_frames()
+
+        returns = (prices + dividends) / prices.shift(1) - 1
+        returns = returns.replace([float('inf'), float('-inf')], float('nan'))
+
+        return returns.dropna(how="all")
+
+    def current_weights(self):
+        """Share of portfolio value held in each position, most recent day."""
+        values = self.build_value_frame().iloc[-1]
+        total = values.sum()
+        if total == 0:
+            return values * 0.0
+        return values / total
 
     @property
     def cashflow_dates(self):

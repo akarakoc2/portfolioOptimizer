@@ -2,7 +2,15 @@ import pandas as pd
 import numpy as np
 from data.market_data import MarketDataFetcher
 
-class BenchmarkComperator():
+class BenchmarkComparator():
+    """Portfolio measured against a benchmark.
+
+    `risk_free` is an annual rate throughout, matching PerformanceCalculator.
+    It is de-annualised where a daily figure is needed -- previously the same
+    number was subtracted from annualised returns in one place and from daily
+    returns in another, so any non-zero rate produced nonsense.
+    """
+
     def __init__(self, portfolio_returns: pd.Series, benchmark_returns: pd.Series, risk_free = 0, mf = None):
 
         aligned = pd.concat([portfolio_returns, benchmark_returns], axis=1, join='inner').dropna()
@@ -11,7 +19,11 @@ class BenchmarkComperator():
         self.rf = risk_free
         self.trading_days = 252
         self.combined = aligned
-        self.mf = mf if mf is not None else MarketDataFetcher()
+        self.mf = mf
+
+    @property
+    def daily_rf(self):
+        return self.rf / self.trading_days
 
     
     def calculate_beta(self):
@@ -32,13 +44,16 @@ class BenchmarkComperator():
     
     def calculate_alpha(self):
 
-        y = self.port_ret - self.rf
+        # Daily excess returns, so the annual rate has to be de-annualised.
+        y = self.port_ret - self.daily_rf
 
-        x_raw = self.bench_ret - self.rf
+        x_raw = self.bench_ret - self.daily_rf
 
         X = np.vstack([x_raw, np.ones(len(x_raw))]).T
 
-        results = np.linalg.lstsq(X, y, rcond=False)
+        # rcond=None is the documented "use the machine-precision default";
+        # rcond=False coerced to 0.0, which disables the singular-value cutoff.
+        results = np.linalg.lstsq(X, y, rcond=None)
 
         coefficients = results[0]
         beta = coefficients[0]
@@ -72,21 +87,6 @@ class BenchmarkComperator():
         
         # 3. Calculate IR
         return alpha_ann / te_ann
-        
-
-    def get_benchmark_returns(self, benchmark_ticker: str):
-
-        start_date = self.port_ret.index.min() 
-        end_date = self.port_ret.index.max()
-
-        df_benchmark = self.mf.get_historical_prices(ticker= benchmark_ticker,
-                                                 start_date=start_date,
-                                                 end_date = end_date
-                                                 )
-        df_benchmark = df_benchmark["Close"]
-        df_benchmark_returns = df_benchmark.pct_change()
-
-        return df_benchmark_returns
         
 
 
