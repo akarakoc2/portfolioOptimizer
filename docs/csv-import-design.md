@@ -263,7 +263,7 @@ country marker:
 |---|---|---|
 | `.O` (NASDAQ) | strip | `MSFT.O` → `MSFT` |
 | `.K` (NYSE Arca) | strip | `ROBO.K` → `ROBO` |
-| `.IS` (Istanbul) | keep | `THYAO.IS` → `THYAO.IS` |
+| `.IS` (Istanbul) | keep | `HALKB.IS` → `HALKB.IS` |
 | no suffix, NYSE | keep | `V` → `V` |
 | exchange `ETR` | **manual** | `BASFn` → `BAS.DE` |
 
@@ -321,9 +321,9 @@ prices the wrong security in silence, which is worse than no entry.
 
 ### Field parsing
 
-- **Dates** are `MM/DD/YYYY` (`05/26/2026` disambiguates it).
+- **Dates** are `MM/DD/YYYY` (`07/19/2026` disambiguates it).
 - **Money** carries a symbol, thousands separators, and sometimes a sign:
-  `$1,002.76`, `₺33,072.00`, `-$25.15`. Strip to a number *and keep the symbol*
+  `$1,234.56`, `₺12,345.00`, `-$67.89`. Strip to a number *and keep the symbol*
   — it is the only currency marker on the row.
 - **Quantities** are fractional to 8 dp (`0.65100000`).
 - `--` means not applicable; `-` means no value. Both are nulls.
@@ -331,13 +331,13 @@ prices the wrong security in silence, which is worse than no entry.
 ### Currency
 
 The blocker for this file. Market values are quoted in the instrument's own
-currency — `$571.30` for US listings, `₺33,072.00` for Istanbul — and on the
-reference export the Turkish positions are **27% of the portfolio**. Summing
-those columns without conversion is meaningless.
+currency — `$1,234.56` for a US listing, `₺12,345.00` for an Istanbul one — so a
+part-Turkish book has a substantial share of its value in a column that cannot
+be added to the rest. Summing those columns without conversion is meaningless.
 
-Note the export's own total ($11,513.37) does not match converting the parts at
-today's USDTRY ($10,937.42). The 5% gap is which rate was used and when, which
-is exactly the design question:
+Worth knowing: the export's own reported total will not match converting the
+parts at today's USDTRY, and the gap is several percent. It is entirely a
+question of which rate was used and when, which is exactly the design question:
 
 - **cost basis** converts at the transaction date
 - **market value** converts at each daily valuation date

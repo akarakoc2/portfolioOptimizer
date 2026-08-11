@@ -34,7 +34,7 @@ CROSS_LISTED = os.path.join(os.path.dirname(__file__), "fixtures", "investing_cr
 @pytest.mark.parametrize("symbol,exchange,expected", [
     ("MSFT.O", "NASDAQ", "MSFT"),
     ("ROBO.K", "NYSE", "ROBO"),
-    ("THYAO.IS", "IS", "THYAO.IS"),      # Yahoo uses the same country suffix
+    ("HALKB.IS", "IS", "HALKB.IS"),      # Yahoo uses the same country suffix
     ("V", "NYSE", "V"),
     ("BASFn", "ETR", "BAS.DE"),          # override, not a suffix rule
 ])
@@ -43,9 +43,9 @@ def test_symbol_translation(symbol, exchange, expected):
 
 
 @pytest.mark.parametrize("raw,amount,currency", [
-    ("$1,002.76", 1002.76, "USD"),
-    ("₺33,072.00", 33072.00, "TRY"),
-    ("-$25.15", -25.15, "USD"),
+    ("$1,234.56", 1234.56, "USD"),
+    ("₺12,345.00", 12345.00, "TRY"),
+    ("-$67.89", -67.89, "USD"),
     ("$0.00", 0.0, "USD"),
     ("--", None, None),
     ("-", None, None),
@@ -55,8 +55,8 @@ def test_money_parsing(raw, amount, currency):
 
 
 @pytest.mark.parametrize("raw,expected", [
-    ("05/26/2026", "2026-05-26"),        # day > 12 settles MM/DD/YYYY
-    ("01/20/2026", "2026-01-20"),
+    ("07/19/2026", "2026-07-19"),        # day > 12 settles MM/DD/YYYY
+    ("01/13/2026", "2026-01-13"),
     ("31/02/2026", None),                # month 31 does not exist
     ("--", None),
     ("2026-01-20", None),                # not the format this export uses
@@ -104,7 +104,7 @@ def test_currency_is_read_from_the_money_marker():
     by_ticker = {t.ticker: t for t in report.transactions}
 
     assert by_ticker["MSFT"].currency == "USD"
-    assert by_ticker["THYAO.IS"].currency == "TRY"
+    assert by_ticker["HALKB.IS"].currency == "TRY"
 
 
 def test_commission_becomes_fees():
@@ -143,7 +143,7 @@ def test_good_rows_survive_bad_ones():
     report = read_transactions(FIXTURE)
 
     tickers = {t.ticker for t in report.transactions}
-    assert {"MSFT", "THYAO.IS", "ROBO", "AAPL", "BAS.DE"} <= tickers
+    assert {"MSFT", "HALKB.IS", "ROBO", "AAPL", "BAS.DE"} <= tickers
     assert len(report.rejected) == 3
 
 
@@ -168,7 +168,7 @@ def test_build_portfolio_groups_lots_into_positions():
 def test_open_positions_match_the_export():
     """BAS.DE appears only in the closed section, so it must not be open."""
     portfolio, _ = build_portfolio(FIXTURE, base_currency="USD")
-    assert {p.ticker for p in portfolio.open_positions()} == {"MSFT", "THYAO.IS", "ROBO"}
+    assert {p.ticker for p in portfolio.open_positions()} == {"MSFT", "HALKB.IS", "ROBO"}
 
 
 def test_section_footers_are_not_data():
@@ -190,7 +190,7 @@ def test_holdings_only_import_skips_closed_positions():
 
 @pytest.mark.parametrize("symbol,expected", [
     ("MSFT", "USD"),
-    ("THYAO.IS", "TRY"),
+    ("HALKB.IS", "TRY"),
     ("BAS.DE", "EUR"),
     ("VOD.L", "GBP"),
     ("WRT1V.HE", "EUR"),     # Helsinki, which used to fall through to dollars

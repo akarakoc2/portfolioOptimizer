@@ -1,7 +1,7 @@
 "Open Positions Summary"
 "","Name","Symbol","Exchange","Type","Amount","Avg Price","Current Price","Market Value","Commission","Weight"
 "","Microsoft","MSFT.O","NASDAQ","BUY","3.00000000","400.00","500.00","$1,500.00","$1.50","60.00%"
-"","THY","THYAO.IS","IS","BUY","100.00000000","280.00","300.00","₺30,000.00","₺0.00","40.00%"
+"","Halkbank","HALKB.IS","IS","BUY","250.00000000","145.00","160.00","₺40,000.00","₺0.00","40.00%"
 
 "Market Value","$2,129.10"
 "Open P/L","$100.00 / 5.00%"
@@ -9,10 +9,10 @@
 
 "Open Positions"
 "","Name","Symbol","Exchange","Open Date","Type","Amount","Open Price","Current Price","Market Value","Commission","Net P/L%"
-"","Microsoft","MSFT.O","NASDAQ","01/20/2026","BUY","2.00000000","390.00","500.00","$1,000.00","$1.50","28.21%"
+"","Microsoft","MSFT.O","NASDAQ","01/12/2026","BUY","2.00000000","390.00","500.00","$1,000.00","$1.50","28.21%"
 "","Microsoft","MSFT.O","NASDAQ","02/10/2026","BUY","1.00000000","420.00","500.00","$500.00","$1.50","19.05%"
-"","THY","THYAO.IS","IS","03/02/2026","BUY","100.00000000","280.00","300.00","₺30,000.00","₺0.00","7.14%"
-"","Robotics ETF","ROBO.K","NYSE","04/02/2026","BUY","5.00000000","70.00","84.00","$420.00","$1.50","20.00%"
+"","Halkbank","HALKB.IS","IS","03/18/2026","BUY","250.00000000","145.00","160.00","₺40,000.00","₺0.00","10.34%"
+"","Robotics ETF","ROBO.K","NYSE","04/15/2026","BUY","5.00000000","70.00","84.00","$420.00","$1.50","20.00%"
 
 
 "Closed Positions"

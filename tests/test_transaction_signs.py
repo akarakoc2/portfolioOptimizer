@@ -42,13 +42,19 @@ def test_transaction_type_is_validated_at_construction():
 
 
 def test_fully_closed_position_is_not_open():
-    """Fractional lots leave a float residue, so `> 0` reported phantom holdings."""
-    from domain.position import Position
-    pos = Position(Transaction("vde", "2025-11-18", "BUY", 3.240472, 126.89, 0, "USD"))
-    pos.add_transaction(Transaction("vde", "2025-11-18", "BUY", 3.23972, 126.89, 0, "USD"))
-    pos.add_transaction(Transaction("vde", "2025-12-10", "SELL", 3.23972, 129.64, 0, "USD"))
-    pos.add_transaction(Transaction("vde", "2026-02-11", "SELL", 3.240472, 153.51, 0, "USD"))
+    """Fractional lots leave a float residue, so `> 0` reported phantom holdings.
 
+    These two quantities are chosen, not arbitrary: buying then selling both
+    leaves +2.2e-16 rather than zero. A pair that cancels exactly would make
+    this pass under the old `> 0` check and guard nothing.
+    """
+    from domain.position import Position
+    pos = Position(Transaction("aaa", "2025-11-18", "BUY", 1.299965, 120.00, 0, "USD"))
+    pos.add_transaction(Transaction("aaa", "2025-11-18", "BUY", 4.469165, 120.00, 0, "USD"))
+    pos.add_transaction(Transaction("aaa", "2025-12-10", "SELL", 4.469165, 130.00, 0, "USD"))
+    pos.add_transaction(Transaction("aaa", "2026-02-11", "SELL", 1.299965, 150.00, 0, "USD"))
+
+    assert pos.net_quantity > 0, "residue gone -- this no longer tests anything"
     assert not pos.is_open
     assert pos.average_cost_basis == 0.0
 
@@ -56,11 +62,11 @@ def test_fully_closed_position_is_not_open():
 def test_reopened_position_forgets_the_closed_lot():
     """A lot closed in 2025 must not drag the basis of one reopened in 2026."""
     from domain.position import Position
-    pos = Position(Transaction("akbnk.is", "2025-04-23", "BUY", 670, 51.40, 0, "TRY"))
-    pos.add_transaction(Transaction("akbnk.is", "2025-10-03", "SELL", 670, 61.30, 0, "TRY"))
-    pos.add_transaction(Transaction("akbnk.is", "2026-02-16", "BUY", 470, 86.04, 0, "TRY"))
+    pos = Position(Transaction("bbb", "2025-04-23", "BUY", 600, 50.00, 0, "TRY"))
+    pos.add_transaction(Transaction("bbb", "2025-10-03", "SELL", 600, 60.00, 0, "TRY"))
+    pos.add_transaction(Transaction("bbb", "2026-02-16", "BUY", 400, 85.00, 0, "TRY"))
 
-    assert pos.average_cost_basis == pytest.approx(86.04)
+    assert pos.average_cost_basis == pytest.approx(85.00)
 
 
 def test_partial_sale_leaves_the_average_alone():

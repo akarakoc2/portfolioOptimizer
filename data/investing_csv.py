@@ -380,7 +380,7 @@ class SymbolResolver:
 
 
 def parse_money(raw):
-    """('$1,002.76') -> (1002.76, 'USD'). The symbol is the only currency marker."""
+    """('$1,234.56') -> (1234.56, 'USD'). The symbol is the only currency marker."""
     if raw is None or raw.strip() in _NULLS:
         return None, None
 
@@ -402,7 +402,7 @@ def parse_number(raw):
 
 
 def parse_date(raw):
-    """investing.com writes MM/DD/YYYY ('05/26/2026' settles the ambiguity)."""
+    """investing.com writes MM/DD/YYYY ('07/19/2026' settles the ambiguity)."""
     raw = (raw or "").strip()
     if raw in _NULLS:
         return None
